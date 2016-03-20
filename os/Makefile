@@ -22,9 +22,9 @@ init.o :
 bootloader.o :
 	$(ARMGNU)-gcc $(COPS) -c boot/bootloader.c -o boot/bootloader.o
 
-periph7.o :
-	$(ARMGNU)-gcc $(COPS) -c driver/periph.c -o driver/periph7.o
+console.o :
+	$(ARMGNU)-gcc $(COPS) -c driver/console.c -o driver/console.o
 
-kernel7.img : loader vectors.o periph7.o init.o bootloader.o
-	$(ARMGNU)-ld boot/vectors.o driver/periph7.o boot/init.o boot/bootloader.o -T loader -o bootloader.elf
+kernel7.img : loader vectors.o console.o init.o bootloader.o
+	$(ARMGNU)-ld boot/vectors.o driver/console.o boot/init.o boot/bootloader.o -T loader -o bootloader.elf
 	$(ARMGNU)-objcopy bootloader.elf -O binary kernel7.img
