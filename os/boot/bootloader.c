@@ -1,8 +1,15 @@
+#include "rpsio.h"
+
+extern void putchar(unsigned int c);
+
 extern void init(void);
 
-int notmain (void)
+int main (void)
 {
-    init();
+	init();
 
-    return(0);
+	printf("hello world\n");
+	printf("hi %s at %d\n", "there", 1406);
+
+	return 0;
 }

@@ -4,7 +4,7 @@ A simple Linux kernel for Raspberry Pi 3.
 Porting MIPS operating system kernel to Raspberry Pi 3 on AArch64.
 
 ## TODO
-- [ ] Boot
+- [X] Boot
 - [ ] Memory management
 - [ ] Process management and exception handling
 - [ ] System call

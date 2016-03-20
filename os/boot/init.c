@@ -1,4 +1,8 @@
+
+extern void uart_init (void);
+
 void init(void)
 {
-    return;
+	uart_init();
+	return;
 }

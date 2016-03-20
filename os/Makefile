@@ -1,30 +1,32 @@
 
-ARMGNU ?= aarch64-none-elf
+driver_dir	  := driver
+boot_dir	  := boot
+lib_dir		  := lib
 
-COPS = -Wall -O2 -nostdlib -nostartfiles -ffreestanding 
+link_script   := loader
 
-gcc : kernel7.img
+modules		  := boot driver lib
+objects		  := $(boot_dir)/*.o		\
+			   	 $(driver_dir)/*.o 		\
+				 $(lib_dir)/*.o
 
-all : gcc
 
-clean :
-	rm -f boot/*.o
-	rm -f driver/*.o
-	rm -f *.elf
-	rm -f *.img
+.PHONY: all $(modules) clean
 
-vectors.o :
-	$(ARMGNU)-as boot/vectors.s -o boot/vectors.o
+all: $(modules) kernel7
 
-init.o :
-	$(ARMGNU)-gcc $(COPS) -c boot/init.c -o boot/init.o
+kernel7: $(modules)
+	$(LD) $(objects) -T $(link_script) -e _start -o bootloader.elf
+	$(OBJCOPY) bootloader.elf -O binary kernel7.img
 
-bootloader.o :
-	$(ARMGNU)-gcc $(COPS) -c boot/bootloader.c -o boot/bootloader.o
+$(modules): 
+	$(MAKE) --directory=$@
 
-console.o :
-	$(ARMGNU)-gcc $(COPS) -c driver/console.c -o driver/console.o
+clean: 
+	for d in $(modules);	\
+		do					\
+			$(MAKE) --directory=$$d clean; \
+		done; \
+	rm -rf *.o *~ kernel7.img bootloader.elf
 
-kernel7.img : loader vectors.o console.o init.o bootloader.o
-	$(ARMGNU)-ld boot/vectors.o driver/console.o boot/init.o boot/bootloader.o -T loader -o bootloader.elf
-	$(ARMGNU)-objcopy bootloader.elf -O binary kernel7.img
+include include.mk

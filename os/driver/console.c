@@ -1,5 +1,3 @@
-#include "console.h"
-
 #define PHYSADDR_OFFSET 0x3F000000
 
 #define GPFSEL1         (PHYSADDR_OFFSET+0x00200004)
