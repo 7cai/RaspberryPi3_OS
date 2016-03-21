@@ -11,16 +11,18 @@ skip:
     bic x0,x0,x1
     cbz x0,master
     b hang
-master:
 
+master:
     mov sp,#0x08000000
-    bl main
-hang: b hang
+    bl bootloader
+
+hang: 
+    b hang
 
 .globl PUT32
 PUT32:
-  str w1,[x0]
-  ret
+    str w1,[x0]
+    ret
 
 .globl GET32
 GET32:

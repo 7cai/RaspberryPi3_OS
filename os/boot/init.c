@@ -1,8 +1,7 @@
-
-extern void uart_init (void);
+#include "uart.h"
 
 void init(void)
 {
-	uart_init();
-	return;
+    uart_init();
+    return;
 }

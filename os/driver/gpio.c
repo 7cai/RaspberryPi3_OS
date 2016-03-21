@@ -1,10 +1,11 @@
+#include "rpslib.h"
+
 #define PHYSADDR_OFFSET 0x3F200000
 
 #define GPFSEL0 (PHYSADDR_OFFSET + 0x00000000)
 #define GPSET0  (PHYSADDR_OFFSET + 0x0000001C)
-#define GPCLR0	(PHYSADDR_OFFSET + 0x00000028)
+#define GPCLR0  (PHYSADDR_OFFSET + 0x00000028)
 
-extern void sleep(unsigned int);
 extern unsigned int GET32(unsigned int);
 extern void PUT32 ( unsigned int, unsigned int );
 

@@ -1,5 +1,5 @@
 
-INCLUDES	  := -I../lib/include/
+INCLUDES	  := -I../lib/include/ -I../driver/include/
 
 
 %.o: %.c

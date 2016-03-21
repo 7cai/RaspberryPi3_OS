@@ -1,7 +1,7 @@
 
-INCLUDES	  := -I../lib/include/
+INCLUDES	  := -I../lib/include/ -I include/
 
-%.o: %.c %.h
+%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< 
 
 .PHONY: clean
