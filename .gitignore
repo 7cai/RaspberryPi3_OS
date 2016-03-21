@@ -30,6 +30,7 @@
 
 # Debug files
 *.dSYM/
+*~
 
 # Dropbox files
 desktop.ini
