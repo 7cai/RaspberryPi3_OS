@@ -6,7 +6,7 @@ INCLUDES	  := -I../lib/include/
 
 .PHONY: clean
 
-all: uart.o
+all: uart.o gpio.o
 
 clean:
 	rm -rf *~ *.o

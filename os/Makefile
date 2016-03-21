@@ -13,7 +13,7 @@ objects		  := $(boot_dir)/*.o		\
 
 .PHONY: all $(modules) clean
 
-all: $(modules) kernel7
+all: clean $(modules) kernel7
 
 kernel7: $(modules)
 	$(LD) $(objects) -T $(link_script) -e _start -o bootloader.elf
