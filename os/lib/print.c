@@ -7,22 +7,81 @@
 #define		IsDigit(x)	( ((x) >= '0') && ((x) <= '9') )
 #define		Ctod(x)		( (x) - '0')
 
-/* forward declaration */
+extern void uart_send(unsigned int c);
 
-int PrintChar(char *, char, int, int);
-int PrintString(char *, char *, int, int);
-int PrintNum(char *, unsigned long, int, int, int, int, char, int);
+static int PrintChar(char *, char, int, int);
+static int PrintString(char *, char *, int, int);
+static int PrintNum(char *, unsigned long, int, int, int, int, char, int);
+static void myoutput(void *arg, char *s, int l);
+static void lp_Print(void (*output)(void *, char *, int),
+                     void * arg,
+                     char *fmt,
+                     va_list ap);
 
 /* private variable */
 static const char theFatalMsg[] = "fatal error in lp_Print!";
 
+void putchar(unsigned int c)
+{
+	switch (c)
+	{
+	case '\n':
+	{
+		uart_send(0x0D);
+		uart_send(0x0A);
+		break;
+	}
+	default:
+		uart_send(c);
+		break;
+	}
+}
+
+
+void printf(char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	lp_Print(myoutput, 0, fmt, ap);
+	va_end(ap);
+}
+
+void _panic(const char *file, int line, const char *fmt, ...)
+{
+	va_list ap;
+
+
+	va_start(ap, fmt);
+	printf("panic at %s:%d: ", file, line);
+	lp_Print(myoutput, 0, (char *)fmt, ap);
+	printf("\n");
+	va_end(ap);
+
+
+	for (;;);
+}
+
+/* --------------- local help functions --------------------- */
+
+static void myoutput(void *arg, char *s, int l)
+{
+	int i;
+
+	// special termination call
+	if ((l == 1) && (s[0] == '\0')) return;
+
+	for (i = 0; i < l; i++) {
+		putchar(s[i]);
+	}
+}
+
 /* -*-
  * A low level printf() function.
  */
-void lp_Print(void (*output)(void *, char *, int),
-              void * arg,
-              char *fmt,
-              va_list ap)
+static void lp_Print(void (*output)(void *, char *, int),
+                     void * arg,
+                     char *fmt,
+                     va_list ap)
 {
 
 #define 	OUTPUT(arg, s, l)  \
@@ -175,9 +234,6 @@ void lp_Print(void (*output)(void *, char *, int),
 	OUTPUT(arg, "\0", 1);
 }
 
-
-/* --------------- local help functions --------------------- */
-
 static int PrintChar(char * buf, char c, int length, int ladjust)
 {
 	int i;
@@ -284,3 +340,4 @@ static int PrintNum(char * buf, unsigned long u, int base, int negFlag,
 	/* adjust the string pointer */
 	return length;
 }
+
