@@ -8,6 +8,7 @@
 #define		Ctod(x)		( (x) - '0')
 
 /* forward declaration */
+
 int PrintChar(char *, char, int, int);
 int PrintString(char *, char *, int, int);
 int PrintNum(char *, unsigned long, int, int, int, int, char, int);
@@ -176,6 +177,7 @@ void lp_Print(void (*output)(void *, char *, int),
 
 
 /* --------------- local help functions --------------------- */
+
 static int PrintChar(char * buf, char c, int length, int ladjust)
 {
 	int i;
@@ -190,6 +192,7 @@ static int PrintChar(char * buf, char c, int length, int ladjust)
 	}
 	return length;
 }
+
 
 static int PrintString(char * buf, char* s, int length, int ladjust)
 {
@@ -208,6 +211,7 @@ static int PrintString(char * buf, char* s, int length, int ladjust)
 	}
 	return length;
 }
+
 
 static int PrintNum(char * buf, unsigned long u, int base, int negFlag,
                     int length, int ladjust, char padc, int upcase)

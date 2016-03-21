@@ -1,13 +1,12 @@
 
-INCLUDES	  := -I include/
-
+INCLUDES	  := -I../lib/include/
 
 %.o: %.c %.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< 
 
 .PHONY: clean
 
-all: print.o printf.o
+all: console.o
 
 clean:
 	rm -rf *~ *.o
