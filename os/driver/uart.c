@@ -50,7 +50,7 @@ void uart_init (void)
     PUT32(AUX_MU_CNTL_REG, 3);
 }
 
-unsigned int uart_lcr (void)
+unsigned int uart_lsr (void)
 {
     return (GET32(AUX_MU_LSR_REG));
 }
@@ -59,7 +59,7 @@ unsigned int uart_recv(void)
 {
     while (1)
     {
-        if (uart_lcr() & 0x01)
+        if (uart_lsr() & 0x01)
         {
             break;
         }
@@ -72,7 +72,7 @@ void uart_send (unsigned int c)
 {
     while (1)
     {
-        if (uart_lcr() & 0x20)
+        if (uart_lsr() & 0x20)
         {
             break;
         }
