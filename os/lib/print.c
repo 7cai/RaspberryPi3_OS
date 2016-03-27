@@ -37,7 +37,7 @@ void putchar(unsigned int c)
 }
 
 
-void printf(char *fmt, ...)
+void printf(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);

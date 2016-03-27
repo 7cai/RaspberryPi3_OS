@@ -3,7 +3,7 @@
 
 #define panic(...) _panic(__FILE__, __LINE__, __VA_ARGS__)
 
-void printf(char *fmt, ...);
+void printf(const char *fmt, ...);
 
 void putchar(unsigned int c);
 
