@@ -79,14 +79,3 @@ void uart_send (unsigned int c)
     }
     PUT32(AUX_MU_IO_REG, c);
 }
-
-void uart_flush(void)
-{
-    while (1)
-    {
-        if ((uart_lcr() & 0x100) == 0)
-        {
-            break;
-        }
-    }
-}
