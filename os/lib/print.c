@@ -4,7 +4,7 @@
 #define PTF_MAX_BUF 100
 
 /* macros */
-#define		panic(...) _panic(__FILE__, __LINE__, __VA_ARGS__)
+#define	panic(...) _panic(__FILE__, __LINE__, __VA_ARGS__)
 
 extern void uart_send(unsigned int c);
 
