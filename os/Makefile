@@ -29,4 +29,7 @@ clean:
 		done; \
 	rm -rf *.o *~ kernel7.img bootloader.elf
 
+debug:
+	$(OBJDUMP) -D -m aarch64 bootloader.elf > bootloader.list
+
 include include.mk

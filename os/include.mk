@@ -10,3 +10,4 @@ CFLAGS		:= -Wall -O2 -nostdlib -nostartfiles -ffreestanding
 LD		:= $(CROSS_COMPILE)-ld
 AS		:= $(CROSS_COMPILE)-as
 OBJCOPY		:= $(CROSS_COMPILE)-objcopy
+OBJDUMP		:= $(CROSS_COMPILE)-objdump

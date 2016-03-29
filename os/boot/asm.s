@@ -1,9 +1,8 @@
-
 .globl _start
 _start:
     b skip
 
-.space 0x200000-0x0004,0
+.space 0x8000-0x4,0
 
 skip:
     mrs x0,mpidr_el1
@@ -16,7 +15,7 @@ master:
     mov sp,#0x08000000
     bl bootloader
 
-hang: 
+hang:
     b hang
 
 .globl PUT32
