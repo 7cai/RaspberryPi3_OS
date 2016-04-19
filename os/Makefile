@@ -2,13 +2,15 @@
 driver_dir	  := driver
 boot_dir	  := boot
 lib_dir		  := lib
+mm_dir		  := mm
 
 link_script   := loader
 
-modules		  := boot driver lib
+modules		  := boot driver lib mm
 objects		  := $(boot_dir)/*.o		\
 			   	 $(driver_dir)/*.o 		\
-				 $(lib_dir)/*.o
+				 $(lib_dir)/*.o 		\
+				 $(mm_dir)/*.o
 
 
 .PHONY: all $(modules) clean

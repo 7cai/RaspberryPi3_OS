@@ -11,10 +11,10 @@ extern void uart_send(unsigned int c);
 static int make_char(char *, char, int, int, int);
 static int make_string(char *, char *, int, int, int);
 static int make_num(char *, unsigned long, int, int, int, int, char, int, int);
-static void print_str(char *s, int l);
+static void print_str(const char *s, int l);
 static void panic_buffer_overflow();
-static void lp_print(void (*output)(char *, int),
-                     char *fmt,
+static void lp_print(void (*output)(const char *, int),
+                     const char *fmt,
                      va_list ap);
 
 /* private variable */
@@ -61,7 +61,7 @@ void _panic(const char *file, int line, const char *fmt, ...)
 
 /* --------------- local help functions --------------------- */
 
-static void print_str(char *s, int l)
+static void print_str(const char *s, int l)
 {
     // special termination call
     if ((l == 1) && (s[0] == '\0'))
@@ -76,8 +76,8 @@ static void print_str(char *s, int l)
 /* -*-
  * A low level printf() function.
  */
-static void lp_print(void (*output)(char *, int),
-                     char *fmt,
+static void lp_print(void (*output)(const char *, int),
+                     const char *fmt,
                      va_list ap)
 {
 
