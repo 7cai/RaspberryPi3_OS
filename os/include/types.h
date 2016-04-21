@@ -16,7 +16,7 @@ typedef unsigned __attribute__((__mode__(SI))) u_int32_t;
 typedef int      __attribute__((__mode__(DI))) int64_t;
 typedef unsigned __attribute__((__mode__(DI))) u_int64_t;
 
-typedef int32_t                 register_t;
+typedef int64_t		register_t;
 
 typedef	unsigned char	u_char;
 typedef	unsigned short	u_short;
@@ -27,7 +27,7 @@ typedef	u_int64_t	u_quad_t;	/* quads */
 typedef	int64_t		quad_t;
 typedef	quad_t 	*qaddr_t;
 
-typedef u_int32_t        size_t;
+typedef u_int64_t        size_t;
 
 
 #define MIN(_a, _b)	\

@@ -6,10 +6,7 @@ INCLUDES	  := -I./include/ -I../lib/include/ -I../env/include/ -I../include/
 
 .PHONY: clean
 
-all: pmap.o tlb_asm.o
-
-tlb_asm.o :
-	$(AS) tlb_asm.S -o tlb_asm.o
+all: pmap.o
 
 clean:
 	rm -rf *~ *.o

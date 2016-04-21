@@ -1,5 +1,5 @@
 
-INCLUDES	  := -I../lib/include/ -I../driver/include/
+INCLUDES	  := -I../lib/include/ -I../driver/include/ -I../mm/include/ -I../include/
 
 
 %.o: %.c
@@ -7,7 +7,7 @@ INCLUDES	  := -I../lib/include/ -I../driver/include/
 
 .PHONY: clean
 
-all: asm.o bootloader.o init.o
+all: asm.o el3.o main.o
 
 asm.o :
 	$(AS) asm.s -o asm.o

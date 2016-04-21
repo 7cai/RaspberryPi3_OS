@@ -24,24 +24,44 @@ struct Page
 
 extern struct Page *pages;
 
-static inline u_long
-page2ppn(struct Page *pp)
+/********** functions for memory management(see implementation in /mm/pmap.c). ***********/
+
+extern struct Page *pages;
+extern void tlb_invalidate(u_long va);
+
+void detect_memory();
+void vm_init();
+void page_init();
+void page_check();
+int page_alloc(struct Page **pp);
+void page_free(struct Page *pp);
+void page_decref(struct Page *pp);
+int pgdir_walk(Pte *pgdir, u_long va, int create, Pte **ppte);
+int page_insert(Pte *pgdir, struct Page *pp, u_long va, u_int perm);
+struct Page *page_lookup(Pte *pgdir, u_long va, Pte **ppte);
+void page_remove(Pte *pgdir, u_long va) ;
+void boot_map_segment(Pte *pgdir, u_long va, u_long size, u_long pa, int perm);
+
+static inline u_long page2ppn(struct Page *pp)
 {
     return pp - pages;
 }
 
-/* Get the physical address of Page 'pp'.
- */
-static inline u_long
-page2pa(struct Page *pp)
+/* Get the physical address of Page 'pp'. */
+static inline u_long page2pa(struct Page *pp)
 {
     return page2ppn(pp) << PGSHIFT;
 }
 
-/* Get the Page struct whose physical address is 'pa'.
- */
-static inline struct Page *
-pa2page(u_long pa)
+static inline u_long va2pa(Pte* pgdir, u_long va)
+{
+    Pte* ppte;
+    pgdir_walk(pgdir, va, 0, &ppte);
+    return (u_long)ppte;
+}
+
+/* Get the Page struct whose physical address is 'pa'. */
+static inline struct Page* pa2page(u_long pa)
 {
     if (PPN(pa) >= npage)
     {
@@ -51,68 +71,10 @@ pa2page(u_long pa)
     return &pages[PPN(pa)];
 }
 
-/* Get the kernel virtual address of Page 'pp'.
- */
-static inline u_long
-page2kva(struct Page *pp)
+/* Get the kernel virtual address of Page 'pp'.*/
+static inline u_long page2kva(struct Page *pp)
 {
-    return KADDR(page2pa(pp));
+    return page2pa(pp);
 }
-
-/* Transform the virtual address 'va' to physical address.
- */
-static inline u_long
-va2pa(Pde *pgdir, u_long va)
-{
-    Pte *p;
-
-    pgdir = &pgdir[PDX(va)];
-
-    if (!(*pgdir & PTE_V))
-    {
-        return ~0;
-    }
-
-    p = (Pte *)KADDR(PTE_ADDR(*pgdir));
-
-    if (!(p[PTX(va)]&PTE_V))
-    {
-        return ~0;
-    }
-
-    return PTE_ADDR(p[PTX(va)]);
-}
-
-static inline void check_va(u_long va)
-{
-    if (va < ULIM)
-    {
-        panic("Invalid va: %x", va);
-    }
-}
-
-
-/********** functions for memory management(see implementation in mm/pmap.c). ***********/
-
-void mips_detect_memory();
-
-void mips_vm_init();
-
-void mips_init();
-void page_init(void);
-void page_check();
-int page_alloc(struct Page **pp);
-void page_free(struct Page *pp);
-void page_decref(struct Page *pp);
-int pgdir_walk(Pde *pgdir, u_long va, int create, Pte **ppte);
-int page_insert(Pde *pgdir, struct Page *pp, u_long va, u_int perm);
-struct Page *page_lookup(Pde *pgdir, u_long va, Pte **ppte);
-void page_remove(Pde *pgdir, u_long va) ;
-void tlb_invalidate(Pde *pgdir, u_long va);
-
-void boot_map_segment(Pde *pgdir, u_long va, u_long size, u_long pa, int perm);
-
-extern struct Page *pages;
-
 
 #endif /* _PMAP_H_ */
