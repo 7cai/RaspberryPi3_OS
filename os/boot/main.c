@@ -3,11 +3,18 @@
 #include "gpio.h"
 #include "pmap.h"
 
-int main (void)
+extern u_long get_current_el();
+
+void main (void)
 {
-    printf("this is the start of el1_main\n");
+        
+    printf("%lx\n", get_current_el());
+    
+    printf("We are finally at EL1!\n");
 
     page_check();
+    
+    printf("Page check passed!\n");
     
     gpio_output_init(17);
     for (;;)
@@ -18,6 +25,6 @@ int main (void)
         gpio_clr(17);
         sleep(1000);
     }
-
-    return 0;
+    
+    panic("The end of main()\n");
 }

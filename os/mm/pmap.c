@@ -87,43 +87,43 @@ static Pte *boot_pgdir_walk(Pte *pgdir, u_long va, int create)
     Pte *pgtable1_entryp;
     Pte *pgtable2_entryp;
     Pte *pgtable3_entryp;
-
+    
     /* Step 1: Get the corresponding page directory entry and page table. */
     /* Hint: Use PTE_ADDR to get the page table from page directory
      * entry value. */
-    pgtable0_entryp = pgdir + PT0X(va);
+    pgtable0_entryp = (Pte *)(&pgdir[PT0X(va)]);
     
     /* Step 2: If the corresponding page table is not exist and parameter `create`
      * is set, create one. And set the correct permission bits for this new page
      * table. */
     
-    pgtable1_entryp = (Pte *)PTE_ADDR(*pgtable0_entryp) + PT1X(va);
+    pgtable1_entryp = (Pte *)(PTE_ADDR(*pgtable0_entryp)) + PT1X(va);
     if (!(*pgtable0_entryp & PTE_V) && create)
     {
         pgtable1_entryp = (Pte *)boot_alloc(BY2PG, BY2PG, 1);
-        *pgtable0_entryp = (u_long)pgtable0_entryp | PTE_V | PTE_R;
+        *pgtable0_entryp = (u_long)pgtable1_entryp | PTE_V | PTE_R;
     }
     else if (!(*pgtable0_entryp & PTE_V))
     {
         return NULL;
     }
     
-    pgtable2_entryp = (Pte *)PTE_ADDR(*pgtable1_entryp) + PT2X(va);
+    pgtable2_entryp = (Pte *)(PTE_ADDR(*pgtable1_entryp)) + PT2X(va);
     if (!(*pgtable1_entryp & PTE_V) && create)
     {
         pgtable2_entryp = (Pte *)boot_alloc(BY2PG, BY2PG, 1);
-        *pgtable1_entryp = (u_long)pgtable1_entryp | PTE_V | PTE_R;
+        *pgtable1_entryp = (u_long)pgtable2_entryp | PTE_V | PTE_R;
     }
     else if (!(*pgtable1_entryp & PTE_V))
     {
         return NULL;
     }
     
-    pgtable3_entryp = (Pte *)PTE_ADDR(*pgtable2_entryp) + PT3X(va);
+    pgtable3_entryp = (Pte *)(PTE_ADDR(*pgtable2_entryp)) + PT3X(va);
     if (!(*pgtable2_entryp & PTE_V) && create)
     {
         pgtable3_entryp = (Pte *)boot_alloc(BY2PG, BY2PG, 1);
-        *pgtable2_entryp = (u_long)pgtable2_entryp | PBE_V | PTE_R;
+        *pgtable2_entryp = (u_long)pgtable3_entryp | PTE_V | PTE_R;
     }
     else if (!(*pgtable2_entryp & PTE_V))
     {
@@ -131,7 +131,7 @@ static Pte *boot_pgdir_walk(Pte *pgdir, u_long va, int create)
     }
 
     /* Step 3: Get the page table entry for `va`, and return it. */
-    return pgtable3_entryp;
+    return (Pte *)(PTE_ADDR(*pgtable2_entryp)) + PT3X(va);
 }
 
 /*Overview:
@@ -178,22 +178,22 @@ void vm_init()
 
     /* Step 1: Allocate a page for page directory(first level page table). */
     pgdir = boot_alloc(BY2PG, BY2PG, 1);
-    printf("to memory %x for struct page directory.\n", freemem);
+    printf("to memory %x for struct page directory.\n", pgdir);
 
     boot_pgdir = pgdir;
 
     /* Step 2: Allocate proper size of physical memory for global array `pages`,
      * for physical memory management. Then, map virtual address `UPAGES` to
      * physical address `pages` allocated before. For consideration of alignment,
-     * you should round up the memory size before map. */
+     * you should round up the memory size before map. */     
     pages = (struct Page *)boot_alloc(npage * sizeof(struct Page), BY2PG, 1);
     printf("to memory %x for struct Pages.\n", freemem);
     
-    n = ROUND(UPAGES, BY2PG);
+    n = ROUND(UTOP, BY2PG);
     boot_map_segment(pgdir, 0, n, 0, PTE_R);
     
-    n = ROUND(npage * sizeof(struct Page), BY2PG);
-    boot_map_segment(pgdir, UPAGES, n, (u_long)pages, PTE_R);
+    // n = ROUND(npage * sizeof(struct Page), BY2PG);
+    // boot_map_segment(pgdir, UPAGES, n, (u_long)pages, PTE_R);
 
     printf("pmap.c:\t vm init success\n");
 }
@@ -306,14 +306,14 @@ int pgdir_walk(Pte *pgdir, u_long va, int create, Pte **ppte)
     struct Page *ppage;
 
     /* Step 1: Get the corresponding page directory entry and page table. */
-    pgtable0_entryp = pgdir + PT0X(va);
+    pgtable0_entryp = (Pte *)(&pgdir[PT0X(va)]);
     
     /* Step 2: If the corresponding page table is not exist(valid) and parameter `create`
      * is set, create one. And set the correct permission bits for this new page
      * table.
      * When creating new page table, maybe out of memory. */
     
-    pgtable1_entryp = (Pte *)PTE_ADDR(*pgtable0_entryp) + PT1X(va);
+    pgtable1_entryp = (Pte *)(PTE_ADDR(*pgtable0_entryp)) + PT1X(va);
     if (!(*pgtable0_entryp & PTE_V) && create)
     {
         if (page_alloc(&ppage) < 0)
@@ -321,7 +321,7 @@ int pgdir_walk(Pte *pgdir, u_long va, int create, Pte **ppte)
             return -E_NO_MEM;
         }
         pgtable1_entryp = (Pte *)page2pa(ppage);
-        *pgtable0_entryp = (u_long)pgtable0_entryp | PTE_V | PTE_R;
+        *pgtable0_entryp = (u_long)pgtable1_entryp | PTE_V | PTE_R;
         ppage->pp_ref++;
     }
     else if (!(*pgtable0_entryp & PTE_V))
@@ -330,7 +330,7 @@ int pgdir_walk(Pte *pgdir, u_long va, int create, Pte **ppte)
         return 0;
     }
     
-    pgtable2_entryp = (Pte *)PTE_ADDR(*pgtable1_entryp) + PT2X(va);
+    pgtable2_entryp = (Pte *)(PTE_ADDR(*pgtable1_entryp)) + PT2X(va);
     if (!(*pgtable1_entryp & PTE_V) && create)
     {
         if (page_alloc(&ppage) < 0)
@@ -338,7 +338,7 @@ int pgdir_walk(Pte *pgdir, u_long va, int create, Pte **ppte)
             return -E_NO_MEM;
         }
         pgtable2_entryp = (Pte *)page2pa(ppage);
-        *pgtable1_entryp = (u_long)pgtable1_entryp | PTE_V | PTE_R;
+        *pgtable1_entryp = (u_long)pgtable2_entryp | PTE_V | PTE_R;
         ppage->pp_ref++;
     }
     else if (!(*pgtable1_entryp & PTE_V))
@@ -347,7 +347,7 @@ int pgdir_walk(Pte *pgdir, u_long va, int create, Pte **ppte)
         return 0;
     }
     
-    pgtable3_entryp = (Pte *)PTE_ADDR(*pgtable2_entryp) + PT3X(va);
+    pgtable3_entryp = (Pte *)(PTE_ADDR(*pgtable2_entryp)) + PT3X(va);
     if (!(*pgtable2_entryp & PTE_V) && create)
     {
         if (page_alloc(&ppage) < 0)
@@ -355,7 +355,7 @@ int pgdir_walk(Pte *pgdir, u_long va, int create, Pte **ppte)
             return -E_NO_MEM;
         }
         pgtable3_entryp = (Pte *)page2pa(ppage);
-        *pgtable2_entryp = (u_long)pgtable2_entryp | PTE_V | PTE_R;
+        *pgtable2_entryp = (u_long)pgtable3_entryp | PTE_V | PTE_R;
         ppage->pp_ref++;
     }
     else if (!(*pgtable2_entryp & PTE_V))
@@ -365,7 +365,7 @@ int pgdir_walk(Pte *pgdir, u_long va, int create, Pte **ppte)
     }
 
     /* Step 3: Set the page table entry to `*ppte` as return value. */
-    *ppte = pgtable3_entryp + PT3X(va);
+    *ppte = (Pte *)(PTE_ADDR(*pgtable2_entryp)) + PT3X(va);
     return 0;
 }
 
@@ -384,7 +384,7 @@ int page_insert(Pte *pgdir, struct Page *pp, u_long va, u_int perm)
 {
     u_int PERM;
     Pte *pgtable_entry;
-    PERM = perm | PTE_V;
+    PERM = perm | PBE_V;
 
     /* Step 1: Get corresponding page table entry. */
     pgdir_walk(pgdir, va, 0, &pgtable_entry);
@@ -402,7 +402,7 @@ int page_insert(Pte *pgdir, struct Page *pp, u_long va, u_int perm)
             return 0;
         }
     }
-
+    
     /* Step 2: Update TLB. */
     tlb_invalidate(va);
 
@@ -436,7 +436,7 @@ struct Page * page_lookup(Pte *pgdir, u_long va, Pte **ppte)
     {
         return 0;
     }
-    if ((*pte & PTE_V) == 0)
+    if ((*pte & PBE_V) == 0)
     {
         return 0;    //the page is not in memory.
     }
@@ -491,112 +491,112 @@ void page_remove(Pte *pgdir, u_long va)
 
 void page_check(void)
 {
-    struct Page *pp, *pp0, *pp1, *pp2;
-    struct Page_list fl;
+	struct Page *pp, *pp0, *pp1, *pp2;
+	struct Page_list fl;
 
-    // should be able to allocate three pages
-    pp0 = pp1 = pp2 = 0;
-    assert(page_alloc(&pp0) == 0);
-    assert(page_alloc(&pp1) == 0);
-    assert(page_alloc(&pp2) == 0);
+	// should be able to allocate three pages
+	pp0 = pp1 = pp2 = 0;
+	assert(page_alloc(&pp0) == 0);
+	assert(page_alloc(&pp1) == 0);
+	assert(page_alloc(&pp2) == 0);
 
-    assert(pp0);
-    assert(pp1 && pp1 != pp0);
-    assert(pp2 && pp2 != pp1 && pp2 != pp0);
+	assert(pp0);
+	assert(pp1 && pp1 != pp0);
+	assert(pp2 && pp2 != pp1 && pp2 != pp0);
 
-    // temporarily steal the rest of the free pages
-    fl = page_free_list;
-    // now this page_free list must be empty!!!!
-    LIST_INIT(&page_free_list);
+	// temporarily steal the rest of the free pages
+	fl = page_free_list;
+	// now this page_free list must be empty!!!!
+	LIST_INIT(&page_free_list);
 
-    // should be no free memory
-    assert(page_alloc(&pp) == -E_NO_MEM);
+	// should be no free memory
+	assert(page_alloc(&pp) == -E_NO_MEM);
 
-    // there is no free memory, so we can't allocate a page table
-    assert(page_insert(boot_pgdir, pp1, 0x0, 0) < 0);
+	// there is no free memory, so we can't allocate a page table
+	assert(page_insert(boot_pgdir, pp1, UTOP + 0x200000, 0) < 0);
 
-    // free pp0 and try again: pp0 should be used for page table
-    page_free(pp0);
-    assert(page_insert(boot_pgdir, pp1, 0x0, 0) == 0);
-    assert(PTE_ADDR(boot_pgdir[0]) == page2pa(pp0));
+	// free pp0 and try again: pp0 should be used for page table
+	page_free(pp0);
+	assert(page_insert(boot_pgdir, pp1, UTOP + 0x200000, 0) == 0);
+	assert(PTE_ADDR(boot_pgdir_walk(boot_pgdir, UTOP + 0x200000, 0)) == page2pa(pp0));
 
-    printf("va2pa(boot_pgdir, 0x0) is %x\n", va2pa(boot_pgdir, 0x0));
-    printf("page2pa(pp1) is %x\n", page2pa(pp1));
+    printf("va2pa(boot_pgdir, %lx) is %x\n", UTOP + 0x200000, va2pa(boot_pgdir, UTOP + 0x200000));
+    printf("page2pa(pp1) is %x\n",page2pa(pp1));
 
-    assert(va2pa(boot_pgdir, 0x0) == page2pa(pp1));
-    assert(pp1->pp_ref == 1);
+	assert(va2pa(boot_pgdir, UTOP + 0x200000) == page2pa(pp1));
+	assert(pp1->pp_ref == 1);
 
-    // should be able to map pp2 at BY2PG because pp0 is already allocated for page table
-    assert(page_insert(boot_pgdir, pp2, BY2PG, 0) == 0);
-    assert(va2pa(boot_pgdir, BY2PG) == page2pa(pp2));
-    assert(pp2->pp_ref == 1);
+	// should be able to map pp2 at BY2PG because pp0 is already allocated for page table
+	assert(page_insert(boot_pgdir, pp2, UTOP + 0x200000 + BY2PG, 0) == 0);
+	assert(va2pa(boot_pgdir, UTOP + 0x200000 + BY2PG) == page2pa(pp2));
+	assert(pp2->pp_ref == 1);
 
-    // should be no free memory
-    assert(page_alloc(&pp) == -E_NO_MEM);
+	// should be no free memory
+	assert(page_alloc(&pp) == -E_NO_MEM);
 
-    printf("start page_insert\n");
-    // should be able to map pp2 at BY2PG because it's already there
-    assert(page_insert(boot_pgdir, pp2, BY2PG, 0) == 0);
-    assert(va2pa(boot_pgdir, BY2PG) == page2pa(pp2));
-    assert(pp2->pp_ref == 1);
+	printf("start page_insert\n");
+	// should be able to map pp2 at BY2PG because it's already there
+	assert(page_insert(boot_pgdir, pp2, UTOP + 0x200000 + BY2PG, 0) == 0);
+	assert(va2pa(boot_pgdir, UTOP + 0x200000 + BY2PG) == page2pa(pp2));
+	assert(pp2->pp_ref == 1);
 
-    // pp2 should NOT be on the free list
-    // could happen in ref counts are handled sloppily in page_insert
-    assert(page_alloc(&pp) == -E_NO_MEM);
+	// pp2 should NOT be on the free list
+	// could happen in ref counts are handled sloppily in page_insert
+	assert(page_alloc(&pp) == -E_NO_MEM);
 
-    // should not be able to map at PDMAP because need free page for page table
-    assert(page_insert(boot_pgdir, pp0, PDMAP, 0) < 0);
+	// should not be able to map at PDMAP because need free page for page table
+	assert(page_insert(boot_pgdir, pp0, UTOP + 0x400000, 0) < 0);
 
-    // insert pp1 at BY2PG (replacing pp2)
-    assert(page_insert(boot_pgdir, pp1, BY2PG, 0) == 0);
+	// insert pp1 at BY2PG (replacing pp2)
+	assert(page_insert(boot_pgdir, pp1, UTOP + 0x200000 + BY2PG, 0) == 0);
 
-    // should have pp1 at both 0 and BY2PG, pp2 nowhere, ...
-    assert(va2pa(boot_pgdir, 0x0) == page2pa(pp1));
-    assert(va2pa(boot_pgdir, BY2PG) == page2pa(pp1));
-    // ... and ref counts should reflect this
-    assert(pp1->pp_ref == 2);
-    printf("pp2->pp_ref %d\n", pp2->pp_ref);
-    assert(pp2->pp_ref == 0);
-    printf("end page_insert\n");
+	// should have pp1 at both 0 and BY2PG, pp2 nowhere, ...
+	assert(va2pa(boot_pgdir, UTOP + 0x200000) == page2pa(pp1));
+	assert(va2pa(boot_pgdir, UTOP + 0x200000) == page2pa(pp1));
+	// ... and ref counts should reflect this
+	assert(pp1->pp_ref == 2);
+	printf("pp2->pp_ref %d\n",pp2->pp_ref);
+	assert(pp2->pp_ref == 0);
+	printf("end page_insert\n");
 
-    // pp2 should be returned by page_alloc
-    assert(page_alloc(&pp) == 0 && pp == pp2);
+	// pp2 should be returned by page_alloc
+	assert(page_alloc(&pp) == 0 && pp == pp2);
 
-    // unmapping pp1 at 0 should keep pp1 at BY2PG
-    page_remove(boot_pgdir, 0x0);
-    assert(va2pa(boot_pgdir, 0x0) == ~0);
-    assert(va2pa(boot_pgdir, BY2PG) == page2pa(pp1));
-    assert(pp1->pp_ref == 1);
-    assert(pp2->pp_ref == 0);
+	// unmapping pp1 at 0 should keep pp1 at BY2PG
+	page_remove(boot_pgdir, UTOP + 0x200000);
+	assert(va2pa(boot_pgdir, UTOP + 0x200000) == ~0);
+	assert(va2pa(boot_pgdir, UTOP + 0x200000 + BY2PG) == page2pa(pp1));
+	assert(pp1->pp_ref == 1);
+	assert(pp2->pp_ref == 0);
 
-    // unmapping pp1 at BY2PG should free it
-    page_remove(boot_pgdir, BY2PG);
-    assert(va2pa(boot_pgdir, 0x0) == ~0);
-    assert(va2pa(boot_pgdir, BY2PG) == ~0);
-    assert(pp1->pp_ref == 0);
-    assert(pp2->pp_ref == 0);
+	// unmapping pp1 at BY2PG should free it
+	page_remove(boot_pgdir, UTOP + 0x200000 + BY2PG);
+	assert(va2pa(boot_pgdir, UTOP + 0x200000) == ~0);
+	assert(va2pa(boot_pgdir, UTOP + 0x200000 + BY2PG) == ~0);
+	assert(pp1->pp_ref == 0);
+	assert(pp2->pp_ref == 0);
 
-    // so it should be returned by page_alloc
-    assert(page_alloc(&pp) == 0 && pp == pp1);
+	// so it should be returned by page_alloc
+	assert(page_alloc(&pp) == 0 && pp == pp1);
 
-    // should be no free memory
-    assert(page_alloc(&pp) == -E_NO_MEM);
+	// should be no free memory
+	assert(page_alloc(&pp) == -E_NO_MEM);
 
-    // forcibly take pp0 back
-    assert(PTE_ADDR(boot_pgdir[0]) == page2pa(pp0));
-    boot_pgdir[0] = 0;
-    assert(pp0->pp_ref == 1);
-    pp0->pp_ref = 0;
+	// forcibly take pp0 back
+	assert(PTE_ADDR(boot_pgdir_walk(boot_pgdir, UTOP + 0x200000, 0)) == page2pa(pp0));
+    *(Pte *)PTE_ADDR(boot_pgdir_walk(boot_pgdir, UTOP + 0x200000, 0)) = 0;
+	assert(pp0->pp_ref == 1);
+	pp0->pp_ref = 0;
 
-    // give free list back
-    page_free_list = fl;
+	// give free list back
+	page_free_list = fl;
 
-    // free the pages we took
-    page_free(pp0);
-    page_free(pp1);
-    page_free(pp2);
+	// free the pages we took
+	page_free(pp0);
+	page_free(pp1);
+	page_free(pp2);
 
-    printf("page_check() succeeded!\n");
+	printf("page_check() succeeded!\n");
 }
 
 void bcopy(const void *src, void *dst, size_t len)

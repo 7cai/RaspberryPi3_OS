@@ -15,11 +15,11 @@ objects		  := $(boot_dir)/*.o		\
 
 .PHONY: all $(modules) clean
 
-all: clean $(modules) kernel7
+all: clean $(modules) kernel8
 
-kernel7: $(modules)
+kernel8: $(modules)
 	$(LD) $(objects) -T $(link_script) -e _start -o bootloader.elf
-	$(OBJCOPY) bootloader.elf -O binary kernel7.img
+	$(OBJCOPY) bootloader.elf -O binary kernel8.img
 
 $(modules): 
 	$(MAKE) --directory=$@
@@ -29,7 +29,7 @@ clean:
 		do					\
 			$(MAKE) --directory=$$d clean; \
 		done; \
-	rm -rf *.o *~ kernel7.img bootloader.elf
+	rm -rf *.o *~ kernel8.img bootloader.elf
 
 debug:
 	$(OBJDUMP) -D -m aarch64 bootloader.elf > bootloader.list

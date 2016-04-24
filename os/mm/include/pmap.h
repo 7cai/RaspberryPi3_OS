@@ -57,7 +57,11 @@ static inline u_long va2pa(Pte* pgdir, u_long va)
 {
     Pte* ppte;
     pgdir_walk(pgdir, va, 0, &ppte);
-    return (u_long)ppte;
+    if (!ppte || !(*ppte & PBE_V))
+    {
+        return ~0;
+    }
+    return (u_long)((Pte *)PTE_ADDR(*ppte));
 }
 
 /* Get the Page struct whose physical address is 'pa'. */
