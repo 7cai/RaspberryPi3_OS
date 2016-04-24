@@ -4,24 +4,25 @@
 #include "pmap.h"
 
 extern u_long get_current_el();
+extern void el1_mmu_activate();
 
 void main (void)
 {
-        
-    printf("%lx\n", get_current_el());
+    printf("We are finally at EL%lx!\n", get_current_el());
     
-    printf("We are finally at EL1!\n");
-
+    // activate mmu for el1
+    el1_mmu_activate();
+    
     page_check();
     
-    printf("Page check passed!\n");
+    printf("Page check passed!\n\n\n\n");
     
     gpio_output_init(17);
     for (;;)
     {
         gpio_set(17);
         sleep(1000);
-
+        
         gpio_clr(17);
         sleep(1000);
     }

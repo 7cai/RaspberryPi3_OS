@@ -1,3 +1,5 @@
+#include "sysconfig.h"
+
 .globl _start
 _start:
     MRS X0, MPIDR_EL1       // Check Core Id, we only use one core. 
@@ -8,8 +10,8 @@ _start:
 
 master:
     LDR X0, =0X04008000
-    MOV SP, X0
-    BL el3_main
+    MOV SP, X0               // Set EL3 SP
+    BL el2_main
 
 hang:
     B hang
@@ -17,21 +19,37 @@ hang:
 .globl get_current_el
 get_current_el:
     MRS X0, CURRENTEL
+    MOV X1, #2
+    LSR X0, X0, #2
     RET
     
-.globl EL1_mmu_activate
-EL1_mmu_activate:
-    LDR X0, =0X04008000     // Set TTBR0
-    MSR TTBR0_EL3, X0       // Set TTBR0
-    LDR X2, =0X20018
-    MSR TCR_EL3, X2         // Set TCR
-    ISB                     // The ISB forces these changes to be seen before the MMU is enabled.
-    RET
-    TLBI ALLE3IS            // Invalidate the entire TLB.
-    MRS X0, SCTLR_EL3       // Read System Control Register configuration data.
-    ORR X0, X0, #1          // Set [M] bit and enable the MMU.
-    MSR SCTLR_EL3, X0       // Write System Control Register configuration data.
-    ISB                     // The ISB forces these changes to be seen by the next instruction.
+.globl el1_mmu_activate
+el1_mmu_activate:
+    LDR X0, =0X04CC
+    MSR MAIR_EL1, X0
+    ISB
+
+    LDR X1, =0X02000000
+    MSR TTBR0_EL1, X1
+    ISB
+
+    MRS X2, TCR_EL1
+    LDR X3, =0x70040FFBF
+    BIC X2, X2, X3
+
+    LDR X3, =0X200803F18
+    ORR X2, X2, X3
+    MSR TCR_EL1, X2
+    ISB
+
+    MRS X3, SCTLR_EL1
+    LDR X4, =0X80000
+    BIC X3, X3, X4
+    
+    LDR X4, =0X1005
+    ORR X3, X3, X4
+    MSR SCTLR_EL1, X3
+    ISB
     RET
 
 .globl jump_to_el1

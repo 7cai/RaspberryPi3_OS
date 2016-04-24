@@ -31,7 +31,7 @@ void detect_memory()
     
     /* Initialize `freemem`. The first virtual address that the
      * linker did *not* assign to any kernel code or global variables. */
-    freemem = (u_long)EL3STACKTOP;
+    freemem = (u_long)UVPT;
 
     // Step 2: Calculate corresponding npage value.
 
@@ -157,7 +157,7 @@ void boot_map_segment(Pte *pgdir, u_long va, u_long size, u_long pa, int perm)
     do
     {
         pgtable_entry = boot_pgdir_walk(pgdir, va, 1);
-        *pgtable_entry = (PTE_ADDR(pa) | perm | PBE_V);
+        *pgtable_entry = (PTE_ADDR(pa) | perm | PBE_V | ATTRIB_AP_RW_EL1 | ATTRIB_SH_INNER_SHAREABLE | AF | UXN);
         va += BY2PG;
         pa += BY2PG;
     }
@@ -187,9 +187,9 @@ void vm_init()
      * physical address `pages` allocated before. For consideration of alignment,
      * you should round up the memory size before map. */     
     pages = (struct Page *)boot_alloc(npage * sizeof(struct Page), BY2PG, 1);
-    printf("to memory %x for struct Pages.\n", freemem);
+    printf("to memory %x for struct Pages.\n", pages);
     
-    n = ROUND(UTOP, BY2PG);
+    n = ROUND(EL2STACKTOP, BY2PG);
     boot_map_segment(pgdir, 0, n, 0, PTE_R);
     
     // n = ROUND(npage * sizeof(struct Page), BY2PG);
@@ -211,11 +211,11 @@ void page_init(void)
     LIST_INIT(&page_free_list);
 
     /* Step 2: Align `freemem` up to multiple of BY2PG. */
-    freemem = ROUND(freemem, BY2PG);
+    freemem = ROUND(EL2STACKTOP, BY2PG);
 
     /* Step 3: Mark all memory blow `freemem` as used(set `pp_ref`
      * filed to 1) */
-    u_int used_amount = PPN(freemem);
+    u_int used_amount = PPN(EL2STACKTOP);
     u_int i = 0;
     for (; i < used_amount; ++i)
     {
@@ -513,22 +513,22 @@ void page_check(void)
 	assert(page_alloc(&pp) == -E_NO_MEM);
 
 	// there is no free memory, so we can't allocate a page table
-	assert(page_insert(boot_pgdir, pp1, UTOP + 0x200000, 0) < 0);
+	assert(page_insert(boot_pgdir, pp1, EL2STACKTOP + 0x200000, 0) < 0);
 
 	// free pp0 and try again: pp0 should be used for page table
 	page_free(pp0);
-	assert(page_insert(boot_pgdir, pp1, UTOP + 0x200000, 0) == 0);
-	assert(PTE_ADDR(boot_pgdir_walk(boot_pgdir, UTOP + 0x200000, 0)) == page2pa(pp0));
+	assert(page_insert(boot_pgdir, pp1, EL2STACKTOP + 0x200000, 0) == 0);
+	assert(PTE_ADDR(boot_pgdir_walk(boot_pgdir, EL2STACKTOP + 0x200000, 0)) == page2pa(pp0));
 
-    printf("va2pa(boot_pgdir, %lx) is %x\n", UTOP + 0x200000, va2pa(boot_pgdir, UTOP + 0x200000));
+    printf("va2pa(boot_pgdir, %lx) is %x\n", EL2STACKTOP + 0x200000, va2pa(boot_pgdir, EL2STACKTOP + 0x200000));
     printf("page2pa(pp1) is %x\n",page2pa(pp1));
 
-	assert(va2pa(boot_pgdir, UTOP + 0x200000) == page2pa(pp1));
+	assert(va2pa(boot_pgdir, EL2STACKTOP + 0x200000) == page2pa(pp1));
 	assert(pp1->pp_ref == 1);
 
 	// should be able to map pp2 at BY2PG because pp0 is already allocated for page table
-	assert(page_insert(boot_pgdir, pp2, UTOP + 0x200000 + BY2PG, 0) == 0);
-	assert(va2pa(boot_pgdir, UTOP + 0x200000 + BY2PG) == page2pa(pp2));
+	assert(page_insert(boot_pgdir, pp2, EL2STACKTOP + 0x200000 + BY2PG, 0) == 0);
+	assert(va2pa(boot_pgdir, EL2STACKTOP + 0x200000 + BY2PG) == page2pa(pp2));
 	assert(pp2->pp_ref == 1);
 
 	// should be no free memory
@@ -536,8 +536,8 @@ void page_check(void)
 
 	printf("start page_insert\n");
 	// should be able to map pp2 at BY2PG because it's already there
-	assert(page_insert(boot_pgdir, pp2, UTOP + 0x200000 + BY2PG, 0) == 0);
-	assert(va2pa(boot_pgdir, UTOP + 0x200000 + BY2PG) == page2pa(pp2));
+	assert(page_insert(boot_pgdir, pp2, EL2STACKTOP + 0x200000 + BY2PG, 0) == 0);
+	assert(va2pa(boot_pgdir, EL2STACKTOP + 0x200000 + BY2PG) == page2pa(pp2));
 	assert(pp2->pp_ref == 1);
 
 	// pp2 should NOT be on the free list
@@ -545,14 +545,14 @@ void page_check(void)
 	assert(page_alloc(&pp) == -E_NO_MEM);
 
 	// should not be able to map at PDMAP because need free page for page table
-	assert(page_insert(boot_pgdir, pp0, UTOP + 0x400000, 0) < 0);
+	assert(page_insert(boot_pgdir, pp0, EL2STACKTOP + 0x400000, 0) < 0);
 
 	// insert pp1 at BY2PG (replacing pp2)
-	assert(page_insert(boot_pgdir, pp1, UTOP + 0x200000 + BY2PG, 0) == 0);
+	assert(page_insert(boot_pgdir, pp1, EL2STACKTOP + 0x200000 + BY2PG, 0) == 0);
 
 	// should have pp1 at both 0 and BY2PG, pp2 nowhere, ...
-	assert(va2pa(boot_pgdir, UTOP + 0x200000) == page2pa(pp1));
-	assert(va2pa(boot_pgdir, UTOP + 0x200000) == page2pa(pp1));
+	assert(va2pa(boot_pgdir, EL2STACKTOP + 0x200000) == page2pa(pp1));
+	assert(va2pa(boot_pgdir, EL2STACKTOP + 0x200000) == page2pa(pp1));
 	// ... and ref counts should reflect this
 	assert(pp1->pp_ref == 2);
 	printf("pp2->pp_ref %d\n",pp2->pp_ref);
@@ -563,16 +563,16 @@ void page_check(void)
 	assert(page_alloc(&pp) == 0 && pp == pp2);
 
 	// unmapping pp1 at 0 should keep pp1 at BY2PG
-	page_remove(boot_pgdir, UTOP + 0x200000);
-	assert(va2pa(boot_pgdir, UTOP + 0x200000) == ~0);
-	assert(va2pa(boot_pgdir, UTOP + 0x200000 + BY2PG) == page2pa(pp1));
+	page_remove(boot_pgdir, EL2STACKTOP + 0x200000);
+	assert(va2pa(boot_pgdir, EL2STACKTOP + 0x200000) == ~0);
+	assert(va2pa(boot_pgdir, EL2STACKTOP + 0x200000 + BY2PG) == page2pa(pp1));
 	assert(pp1->pp_ref == 1);
 	assert(pp2->pp_ref == 0);
 
 	// unmapping pp1 at BY2PG should free it
-	page_remove(boot_pgdir, UTOP + 0x200000 + BY2PG);
-	assert(va2pa(boot_pgdir, UTOP + 0x200000) == ~0);
-	assert(va2pa(boot_pgdir, UTOP + 0x200000 + BY2PG) == ~0);
+	page_remove(boot_pgdir, EL2STACKTOP + 0x200000 + BY2PG);
+	assert(va2pa(boot_pgdir, EL2STACKTOP + 0x200000) == ~0);
+	assert(va2pa(boot_pgdir, EL2STACKTOP + 0x200000 + BY2PG) == ~0);
 	assert(pp1->pp_ref == 0);
 	assert(pp2->pp_ref == 0);
 
@@ -583,8 +583,8 @@ void page_check(void)
 	assert(page_alloc(&pp) == -E_NO_MEM);
 
 	// forcibly take pp0 back
-	assert(PTE_ADDR(boot_pgdir_walk(boot_pgdir, UTOP + 0x200000, 0)) == page2pa(pp0));
-    *(Pte *)PTE_ADDR(boot_pgdir_walk(boot_pgdir, UTOP + 0x200000, 0)) = 0;
+	assert(PTE_ADDR(boot_pgdir_walk(boot_pgdir, EL2STACKTOP + 0x200000, 0)) == page2pa(pp0));
+    *(Pte *)PTE_ADDR(boot_pgdir_walk(boot_pgdir, EL2STACKTOP + 0x200000, 0)) = 0;
 	assert(pp0->pp_ref == 1);
 	pp0->pp_ref = 0;
 

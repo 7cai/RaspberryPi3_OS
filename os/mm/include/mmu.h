@@ -1,6 +1,8 @@
 #ifndef _MMU_H_
 #define _MMU_H_
 
+#include "sysconfig.h"
+
 /*
  * This file contains:
  *
@@ -12,7 +14,6 @@
 /*
  * Part 1.  ARM definitions.
  */
-#define MAXPA   (512 * 1024 * 1024)
 #define BY2PG   4096            // bytes to a page
 #define PDMAP	(4*1024)	// bytes mapped by a third page table entry
 
@@ -36,14 +37,23 @@
 /* Page Table/Directory Entry flags
  *   these are defined by the hardware
  */
-#define PTE_V       0x0003  // Table Entry Valid bit
-#define PBE_V       0x0001  // Block Entry Valid bit
-#define PTE_R       0x0000  // Dirty bit ,'0' means only read ,otherwise make interrupt
-// #define PTE_G       0x0100  // Global bit
-// #define PTE_D       0x0002  // fileSystem Cached is dirty
-// #define PTE_COW     0x0001  // Copy On Write
-// #define PTE_UC      0x0800  // unCached
-// #define PTE_LIBRARY 0x0004  // share memmory
+#define PTE_V                       0x3 << 0  // Table Entry Valid bit
+#define PBE_V                       0x1 << 0  // Block Entry Valid bit
+#define PTE_R                       0x0 << 0  // Dirty bit ,'0' means only read ,otherwise make interrupt
+#define ATTRIB_AP_RW_EL1	        0x0 << 6
+#define ATTRIB_AP_RW_ALL	        0x1 << 6
+#define ATTRIB_AP_RO_EL1	        0x2 << 6
+#define ATTRIB_AP_RO_ALL	        0x3 << 6
+#define ATTRIB_SH_NON_SHAREABLE		0x0 << 8
+#define ATTRIB_SH_OUTER_SHAREABLE	0x2 << 8
+#define ATTRIB_SH_INNER_SHAREABLE	0x3 << 8
+#define AF                          0x1 << 10
+#define PXN                         0x0 << 53
+#define UXN                         0x1UL << 54
+
+#define ATTRINDX_NORMAL		0   // inner/outer write-back non-transient, non-allocating
+#define ATTRINDX_DEVICE		1   // Device-nGnRE
+#define ATTRINDX_COHERENT	2	// Device-nGnRnE
 
 /*
  * Part 2.  Our conventions.
@@ -54,31 +64,21 @@
  o                           |                            |
  o                           |            ...             |
  o                           |                            |
- o               UTOP -----> +----------------------------+------------0x          0430 9000
- o                           |           PAGES            |
- o             UPAGES -----> +----------------------------+------------0x          0400 9000
- o                           |         Page Table         |
- o  UVPT, EL3STACKTOP -----> +----------------------------+------------0x          0400 8000
- o                           |          EL3 stack         |
- o          KSTACKTOP -----> +----------------------------+------------0x          03C0 8000
+ o        EL2STACKTOP -----> +----------------------------+------------0x          0400 0000
+ o                           |          EL2 stack         |
+ o          KSTACKTOP -----> +----------------------------+------------0x          03C0 0000
  o                           |         Kernel stack       |
- o                           |                            |
+ o               UTOP -----> +----------------------------+------------0x          0230 1000
+ o                           |           PAGES            |
+ o             UPAGES -----> +----------------------------+------------0x          0200 1000
+ o                           |         Page Table         |
+ o               UVPT -----> +----------------------------|------------0x          0200 0000
  o                           |         Kernel Text        |
  o           KERNBASE -----> +----------------------------+------------0x             8 0000
  o                           |          reserved          |
  a           0 ------------> +----------------------------+------------0x               0000
  o
 */
-
-#define KERNBASE 0x8000
-
-#define KSTACKTOP   EL3STACKTOP - 0x400000
-#define EL3STACKTOP 0x04008000
-#define UVPT        EL3STACKTOP
-#define UPAGES      UVPT + 0x1000
-#define UTOP        UPAGES + 0x300000
-
-#define KSTKSIZE (60*1024*1024)
 
 #ifndef __ASSEMBLER__
 
