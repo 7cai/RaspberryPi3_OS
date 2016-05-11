@@ -9,8 +9,8 @@ export PREFIX=/opt/gnuarm64
 export PATH=$PATH:$PREFIX/bin
 export JN='-j 8'
 
-export GCCVER=5.3.0
-export BINUVER=2.25.1
+export GCCVER=6.1.0
+export BINUVER=2.26
 
 rm -rf build-*
 rm -rf gcc-*

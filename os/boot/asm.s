@@ -2,112 +2,112 @@
 
 .globl _start
 _start:
-    MRS X0, MPIDR_EL1       // Check Core Id, we only use one core. 
-    MOV X1, #0XC1000000
-    BIC X0, X0, X1
-    CBZ X0, master
-    B hang
+    mrs x0, mpidr_el1       // check core id, we only use one core.
+    mov x1, #0xc1000000
+    bic x0, x0, x1
+    cbz x0, master
+    b hang
 
 master:
-    LDR X0, =0X04008000
-    MOV SP, X0               // Set EL3 SP
-    BL el2_main
+    ldr x0, =0x1000000
+    mov sp, x0               // set el3 sp
+    bl el2_main
 
 hang:
-    B hang
-    
+    b hang
+
 .globl get_current_el
 get_current_el:
-    MRS X0, CURRENTEL
-    MOV X1, #2
-    LSR X0, X0, #2
-    RET
-    
+    mrs x0, currentel
+    mov x1, #2
+    lsr x0, x0, #2
+    ret
+
 .globl el1_mmu_activate
 el1_mmu_activate:
-    LDR X0, =0X04CC
-    MSR MAIR_EL1, X0
-    ISB
+    ldr x0, =0x04cc
+    msr mair_el1, x0
+    isb
 
-    LDR X1, =0X02000000
-    MSR TTBR0_EL1, X1
-    ISB
+    ldr x1, =0x02000000
+    msr ttbr0_el1, x1
+    isb
 
-    MRS X2, TCR_EL1
-    LDR X3, =0x70040FFBF
-    BIC X2, X2, X3
+    mrs x2, tcr_el1
+    ldr x3, =0x70040ffbf
+    bic x2, x2, x3
 
-    LDR X3, =0X200803F18
-    ORR X2, X2, X3
-    MSR TCR_EL1, X2
-    ISB
+    ldr x3, =0x200803f18
+    orr x2, x2, x3
+    msr tcr_el1, x2
+    isb
 
-    MRS X3, SCTLR_EL1
-    LDR X4, =0X80000
-    BIC X3, X3, X4
-    
-    LDR X4, =0X1005
-    ORR X3, X3, X4
-    MSR SCTLR_EL1, X3
-    ISB
-    RET
+    mrs x3, sctlr_el1
+    ldr x4, =0x80000
+    bic x3, x3, x4
+
+    ldr x4, =0x1005
+    orr x3, x3, x4
+    msr sctlr_el1, x3
+    isb
+    ret
 
 .globl jump_to_el1
 jump_to_el1:
-	MRS	X0, CURRENTEL		// Check if already in EL1
-	CMP	X0, #4
-	BEQ	1f
+	mrs	x0, currentel		// check if already in el1
+	cmp	x0, #4
+	beq	1f
 
-	LDR	X0, =0X03C08000
-	MSR	SP_EL1, X0	        // Init the stack of EL1
+	ldr	x0, =0xf00000
+	msr	sp_el1, x0	        // init the stack of el1
 
-    // Disable coprocessor traps
-	MOV	X0, #0X33ff
-	MSR	CPTR_EL2, X0	    // Disable coprocessor traps to EL2
-	MSR	HSTR_EL2, xzr		// Disable coprocessor traps to EL2
-	MOV	X0, #3 << 20
-	MSR	CPACR_EL1, X0	    // Enable FP/SIMD at EL1
+    // disable coprocessor traps
+	mov	x0, #0x33ff
+	msr	cptr_el2, x0	    // disable coprocessor traps to el2
+	msr	hstr_el2, xzr		// disable coprocessor traps to el2
+	mov	x0, #3 << 20
+	msr	cpacr_el1, x0	    // enable fp/simd at el1
 
-	// Initialize HCR_EL2
-	MOV	X0, #(1 << 31)
-	MSR	HCR_EL2, X0		    // Set EL1 to 64 bit
-	MOV	X0, #0X0800
-	MOVK X0, #0X30d0, LSL #16
-	MSR	SCTLR_EL1, X0
+	// initialize hcr_el2
+	mov	x0, #(1 << 31)
+	msr	hcr_el2, x0		    // set el1 to 64 bit
+	mov	x0, #0x0800
+	movk x0, #0x30d0, lsl #16
+	msr	sctlr_el1, x0
 
-	// Return to the EL1_SP1 mode from EL2
-	MOV	X0, #0X3C5
-	MSR	SPSR_EL2, X0	    // EL1_SP0 | D | A | I | F
-	ADR	X0, 1f
-	MSR	ELR_EL2, X0
-	ERET
-    
+	// return to the el1_sp1 mode from el2
+	mov	x0, #0x3c5
+	msr	spsr_el2, x0	    // el1_sp0 | d | a | i | f
+	adr	x0, 1f
+	msr	elr_el2, x0
+	eret
+
 1:
-	MRS	X0, SCTLR_EL1
-	ORR	X0, X0, #(1 << 12)
-	MSR	SCTLR_EL1, X0		// enable instruction cache
+	mrs	x0, sctlr_el1
+	orr	x0, x0, #(1 << 12)
+	msr	sctlr_el1, x0		// enable instruction cache
+    b main
 
-    B main
-    
 .globl tlb_invalidate
 tlb_invalidate:
-    DSB ISHST               // ensure write has completed
-    LDR X0, [X0]            // load VA from X0
-    TLBI VAAE1, X0          // invalidate TLB by VA, All ASID, EL1.
-    DSB ISH                 // ensure completion of TLB invalidation
-    ISB                     // synchronize context and ensure that no instructions are fetched using the old translation
-    RET
+    dsb ishst               // ensure write has completed
+    ldr x0, [x0]            // load va from x0
+    tlbi vmalle1            // invalidate tlb by va, all asid, el1.
+    dsb ish                 // ensure completion of tlb invalidation
+    isb                     // synchronize context and ensure that no instructions
+                            // are fetched using the old translation
+    ret
 
-.globl PUT32
-PUT32:
-    STR W1,[X0]
-    RET
+.globl put32
+put32:
+    str w1,[x0]
+    ret
 
-.globl GET32
-GET32:
-    LDR W0,[X0]
-    RET
+.globl get32
+get32:
+    ldr w0,[x0]
+    ret
 
 .globl dummy
 dummy:
-    RET
+    ret

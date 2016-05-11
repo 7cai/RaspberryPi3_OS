@@ -5,7 +5,7 @@ Porting MIPS operating system kernel to Raspberry Pi 3 on AArch64.
 
 ## TODO
 - [X] Boot
-- [ ] Memory management
+- [X] Memory management
 - [ ] Process management and exception handling
 - [ ] System call
 - [ ] File system

@@ -10,16 +10,19 @@ void el2_main(void)
 {
     // initialize uart
     uart_init();
-    
-    // create page dir and page map 
+
+    printf("\n\nInitializing...\n");
+
+    // create page dir and page map
     vm_init();
-    
+    printf("vm_init success.\n");
+
     // fill page map
-	page_init();
-    
+    page_init();
+
     // jump to el1
     printf("Now in EL%lx. Jumping to EL1...\n", get_current_el());
     jump_to_el1();
-    
-    panic("failed to jump");
+
+    panic("failed to jump EL");
 }

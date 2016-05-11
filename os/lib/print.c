@@ -67,7 +67,8 @@ static void print_str(const char *s, int l)
     if ((l == 1) && (s[0] == '\0'))
         return;
 
-    for (int i = 0; i < l; i++)
+    int i;
+    for (i = 0; i < l; i++)
     {
         putchar(s[i]);
     }
