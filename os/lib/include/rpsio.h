@@ -1,7 +1,7 @@
 #ifndef _rpsio_h_
 #define _rpsio_h_
 
-void printf(const char *fmt, ...);
+void _printf(const char *fmt, ...);
 
 void putchar(unsigned int c);
 

@@ -43,9 +43,9 @@ void uart_init(void)
     ra |= 2 << 15;      //alt5
     put32(GPFSEL1, ra);
     put32(GPPUD, 0);
-    sleep(0);
+    _sleep(0);
     put32(GPPUDCLK0, (1 << 14) | (1 << 15));
-    sleep(0);
+    _sleep(0);
     put32(GPPUDCLK0, 0);
     put32(AUX_MU_CNTL_REG, 3);
 }

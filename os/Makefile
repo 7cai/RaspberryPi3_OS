@@ -3,14 +3,16 @@ driver_dir	  := driver
 boot_dir	  := boot
 lib_dir		  := lib
 mm_dir		  := mm
+user_dir      := user
 
 link_script   := loader
 
-modules		  := boot driver lib mm
+modules		  := boot driver lib mm user
 objects		  := $(boot_dir)/*.o		\
 			   	 $(driver_dir)/*.o 		\
 				 $(lib_dir)/*.o 		\
-				 $(mm_dir)/*.o
+				 $(mm_dir)/*.o          \
+				 $(user_dir)/*.o
 
 
 .PHONY: all $(modules) clean

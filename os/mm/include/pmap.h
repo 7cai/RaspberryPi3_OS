@@ -77,12 +77,4 @@ static inline struct Page *pa2page(u_long pa)
     return &pages[PPN(pa)];
 }
 
-
-/* Get the kernel virtual address of Page 'pp'.*/
-static inline u_long page2kva(struct Page *pp)
-{
-    return page2pa(pp);
-}
-
-
 #endif /* _PMAP_H_ */

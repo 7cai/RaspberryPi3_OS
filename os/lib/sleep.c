@@ -1,20 +1,19 @@
-#define CYCLES_PER_MILLISECOND 1500
+#include "timer.h"
 
-extern void dummy ( unsigned int );
+extern void dummy();
 
-void sleep(unsigned int millisecond)
+void _sleep(unsigned int millisecond)
 {
-    unsigned int i, j;
-    for (i = 0; i < millisecond; i++)
+    u_long time = get_system_timer() + millisecond * 1000;
+
+    while (get_system_timer() < time)
     {
-        for (j = 0; j < CYCLES_PER_MILLISECOND; j++)
-        {
-            dummy(j);
-        }
+        dummy(time);
     }
 
+    int i;
     for (i = 0; i < 150; i++)
     {
-        dummy(i);
+        dummy(time);
     }
 }

@@ -1,10 +1,13 @@
 #ifndef _SYSCONFIG_H_
 #define _SYSCONFIG_H_
 
-#define MAXPA          (512 * 1024 * 1024)
+#define MAXPA        (512 * 1024 * 1024)
 
-#define EL2STACKTOP    (0x01000000)
-#define KSTACKTOP      (EL2STACKTOP - 0x100000)
-#define KERNBASE       (0x00080000)
+#define TIMESTACKTOP (0x01352000)
+#define EL2STACKTOP  (0x01000000)
+#define KSTACKTOP    (EL2STACKTOP - 0x100000)
+#define KERNBASE     (0x00080000)
+
+#define USTACKTOP    (0xFFFFFF0080000000)
 
 #endif // _SYSCONFIG_H_

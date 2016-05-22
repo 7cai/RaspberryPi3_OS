@@ -1,10 +1,9 @@
-
 #include <stdarg.h>
 
 #define PTF_MAX_BUF 100
 
 /* macros */
-#define	panic(...) _panic(__FILE__, __LINE__, __VA_ARGS__)
+#define panic(...)  _panic(__FILE__, __LINE__, __VA_ARGS__)
 
 extern void uart_send(unsigned int c);
 
@@ -25,11 +24,10 @@ void putchar(unsigned int c)
     switch (c)
     {
     case '\n':
-    {
         uart_send(0x0D);
         uart_send(0x0A);
         break;
-    }
+
     default:
         uart_send(c);
         break;
@@ -37,7 +35,7 @@ void putchar(unsigned int c)
 }
 
 
-void printf(const char *fmt, ...)
+void _printf(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -45,19 +43,22 @@ void printf(const char *fmt, ...)
     va_end(ap);
 }
 
+
 void _panic(const char *file, int line, const char *fmt, ...)
 {
     va_list ap;
 
-
     va_start(ap, fmt);
-    printf("panic at %s:%d: ", file, line);
+    _printf("panic at %s:%d: ", file, line);
     lp_print(print_str, (char *)fmt, ap);
-    printf("\n");
+    _printf("\n");
     va_end(ap);
 
-    for (;;);
+    for ( ; ; )
+    {
+    }
 }
+
 
 /* --------------- local help functions --------------------- */
 
@@ -65,7 +66,9 @@ static void print_str(const char *s, int l)
 {
     // special termination call
     if ((l == 1) && (s[0] == '\0'))
+    {
         return;
+    }
 
     int i;
     for (i = 0; i < l; i++)
@@ -74,21 +77,22 @@ static void print_str(const char *s, int l)
     }
 }
 
+
 /* -*-
- * A low level printf() function.
+ * A low level _printf() function.
  */
 static void lp_print(void (*output)(const char *, int),
                      const char *fmt,
                      va_list ap)
 {
-
-#define 	OUTPUT(s, l)  \
-  { if (((l) < 0) || ((l) > PTF_MAX_BUF)) { \
-       (*output)((char*)theFatalMsg, sizeof(theFatalMsg)-1); for(;;); \
-    } else { \
-      (*output)(s, l); \
-    } \
-  }
+#define     OUTPUT(s, l)                                                            \
+    { if (((l) < 0) || ((l) > PTF_MAX_BUF)) {                                       \
+          (*output)((char *)theFatalMsg, sizeof(theFatalMsg) - 1); for ( ; ; ) {; } \
+      }                                                                             \
+      else {                                                                        \
+          (*output)(s, l);                                                          \
+      }                                                                             \
+    }
 
     char buf[PTF_MAX_BUF];
 
@@ -104,7 +108,7 @@ static void lp_print(void (*output)(const char *, int),
 
     int length;
 
-    for (;;)
+    for ( ; ; )
     {
         /* scan for the next '%' */
         /* flush the string found so far */
@@ -125,7 +129,7 @@ static void lp_print(void (*output)(const char *, int),
         /* check flags */
         ladjust = 0;
         padc = ' ';
-        for (;;)
+        for ( ; ; )
         {
             switch (*fmt)
             {
@@ -133,10 +137,12 @@ static void lp_print(void (*output)(const char *, int),
                 ladjust = 1;
                 fmt++;
                 break;
+
             case '0':
                 padc = '0';
                 fmt++;
                 break;
+
             default:
                 goto check_width;
                 break;
@@ -156,7 +162,7 @@ check_width:
 
         /* check for long */
         longFlag = 0;
-        if (*fmt == 'l' || *fmt == 'L')
+        if ((*fmt == 'l') || (*fmt == 'L'))
         {
             longFlag = 1;
             ++fmt;
@@ -168,11 +174,11 @@ check_width:
         case 'b':
             if (longFlag)
             {
-                num = va_arg(ap, long int);
+                num = va_arg(ap, unsigned long int);
             }
             else
             {
-                num = va_arg(ap, int);
+                num = va_arg(ap, unsigned int);
             }
             length = make_num(buf, num, 2, 0, width, ladjust, padc, 0, PTF_MAX_BUF);
             OUTPUT(buf, length);
@@ -190,7 +196,7 @@ check_width:
             }
             if (num < 0)
             {
-                num = - num;
+                num = -num;
                 negFlag = 1;
             }
             length = make_num(buf, num, 10, negFlag, width, ladjust, padc, 0, PTF_MAX_BUF);
@@ -201,11 +207,11 @@ check_width:
         case 'O':
             if (longFlag)
             {
-                num = va_arg(ap, long int);
+                num = va_arg(ap, unsigned long int);
             }
             else
             {
-                num = va_arg(ap, int);
+                num = va_arg(ap, unsigned int);
             }
             length = make_num(buf, num, 8, 0, width, ladjust, padc, 0, PTF_MAX_BUF);
             OUTPUT(buf, length);
@@ -215,11 +221,11 @@ check_width:
         case 'U':
             if (longFlag)
             {
-                num = va_arg(ap, long int);
+                num = va_arg(ap, unsigned long int);
             }
             else
             {
-                num = va_arg(ap, int);
+                num = va_arg(ap, unsigned int);
             }
             length = make_num(buf, num, 10, 0, width, ladjust, padc, 0, PTF_MAX_BUF);
             OUTPUT(buf, length);
@@ -228,11 +234,11 @@ check_width:
         case 'x':
             if (longFlag)
             {
-                num = va_arg(ap, long int);
+                num = va_arg(ap, unsigned long int);
             }
             else
             {
-                num = va_arg(ap, int);
+                num = va_arg(ap, unsigned int);
             }
             length = make_num(buf, num, 16, 0, width, ladjust, padc, 0, PTF_MAX_BUF);
             OUTPUT(buf, length);
@@ -241,11 +247,11 @@ check_width:
         case 'X':
             if (longFlag)
             {
-                num = va_arg(ap, long int);
+                num = va_arg(ap, unsigned long int);
             }
             else
             {
-                num = va_arg(ap, int);
+                num = va_arg(ap, unsigned int);
             }
             length = make_num(buf, num, 16, 0, width, ladjust, padc, 1, PTF_MAX_BUF);
             OUTPUT(buf, length);
@@ -258,26 +264,27 @@ check_width:
             break;
 
         case 's':
-            s = (char*)va_arg(ap, char *);
+            s = (char *)va_arg(ap, char *);
             length = make_string(buf, s, width, ladjust, PTF_MAX_BUF);
             OUTPUT(buf, length);
             break;
 
         case '\0':
-            fmt --;
+            fmt--;
             break;
 
         default:
             /* output this char as it is */
             OUTPUT(fmt, 1);
-        }	/* switch (*fmt) */
+        }   /* switch (*fmt) */
 
-        fmt ++;
-    }		/* for(;;) */
+        fmt++;
+    }       /* for(;;) */
 
     /* special termination call */
     OUTPUT("\0", 1);
 }
+
 
 static int make_char(char *to, char from, int length, int ladjust, int max_buf)
 {
@@ -289,18 +296,24 @@ static int make_char(char *to, char from, int length, int ladjust, int max_buf)
     }
 
     if (length < 1)
+    {
         length = 1;
+    }
 
     if (ladjust)
     {
         *to = from;
         for (i = 1; i < length; i++)
+        {
             to[i] = ' ';
+        }
     }
     else
     {
         for (i = 0; i < length - 1; i++)
+        {
             to[i] = ' ';
+        }
         to[length - 1] = from;
     }
     return length;
@@ -310,11 +323,15 @@ static int make_char(char *to, char from, int length, int ladjust, int max_buf)
 static int make_string(char *to, char *from, int length, int ladjust, int max_buf)
 {
     int len = 0;
-    char* t = from;
+    char *t = from;
     while (*t++)
+    {
         len++;
+    }
     if (length < len)
+    {
         length = len;
+    }
 
     if (length > max_buf)
     {
@@ -325,17 +342,25 @@ static int make_string(char *to, char *from, int length, int ladjust, int max_bu
     {
         int i;
         for (i = 0; i < len; i++)
+        {
             to[i] = from[i];
-        for (; i < length; i++)
+        }
+        for ( ; i < length; i++)
+        {
             to[i] = ' ';
+        }
     }
     else
     {
         int i;
         for (i = 0; i < length - len; i++)
+        {
             to[i] = ' ';
+        }
         for (i = length - len; i < length; i++)
+        {
             to[i] = from[i - length + len];
+        }
     }
     return length;
 }
@@ -374,8 +399,7 @@ static int make_num(char *to, unsigned long u, int base, int negFlag,
             *p++ = 'a' + tmp - 10;
         }
         u /= base;
-    }
-    while (u != 0);
+    } while (u != 0);
 
     if (negFlag)
     {
@@ -385,7 +409,9 @@ static int make_num(char *to, unsigned long u, int base, int negFlag,
     /* figure out actual length and adjust the maximum length */
     actualLength = p - to;
     if (length < actualLength)
+    {
         length = actualLength;
+    }
     if (length > max_buf)
     {
         panic_buffer_overflow();
@@ -399,13 +425,17 @@ static int make_num(char *to, unsigned long u, int base, int negFlag,
     if (negFlag && !ladjust && (padc == '0'))
     {
         for (i = actualLength - 1; i < length - 1; i++)
+        {
             to[i] = padc;
+        }
         to[length - 1] = '-';
     }
     else
     {
         for (i = actualLength; i < length; i++)
+        {
             to[i] = padc;
+        }
     }
 
 
@@ -427,14 +457,15 @@ static int make_num(char *to, unsigned long u, int base, int negFlag,
             char tmp = to[begin];
             to[begin] = to[end];
             to[end] = tmp;
-            begin ++;
-            end --;
+            begin++;
+            end--;
         }
     }
 
     /* adjust the string pointer */
     return length;
 }
+
 
 static void panic_buffer_overflow()
 {

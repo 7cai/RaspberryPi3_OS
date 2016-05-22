@@ -1,32 +1,38 @@
 #include "rpsio.h"
 #include "rpslib.h"
 #include "gpio.h"
+#include "timer.h"
 #include "pmap.h"
+#include "env.h"
 
 extern u_long get_current_el();
 extern void el1_mmu_activate();
 
+extern u_char userA[];
+extern u_char userB[];
+
 void main(void)
 {
-    printf("We are now at EL%lx.\n", get_current_el());
+    // activate el1/0 mmu
+    el1_mmu_activate();
 
-    // activate mmu for el1
-    // el1_mmu_activate();
-    // printf("MMU activated.\n");
+    _printf("We are now at EL%lx.\n", get_current_el());
+    _printf("\n");
 
-    //printf("%s\n", "Page check start");
-    //page_check();
-    //printf("Page check passed!\n\n\n\n");
-
-    printf("Activating LED...\n");
     gpio_output_init(17);
+    gpio_output_init(27);
+
+    _printf("creating new env...\n");
+    env_create(userA, 66816);
+    env_create(userB, 66816);
+
+    _printf("activating system timer...\n");
+    set_system_timer_irq(1000000);
+
+    _printf("system initialization finished.\n");
+
     for ( ; ; )
     {
-        gpio_set(17);
-        sleep(1000);
-
-        gpio_clr(17);
-        sleep(1000);
     }
 
     panic("The end of main()\n");
