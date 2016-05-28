@@ -51,7 +51,12 @@ static inline u_long page2ppn(struct Page *pp)
 /* Get the physical address of Page 'pp'. */
 static inline u_long page2pa(struct Page *pp)
 {
-    return page2ppn(pp) << PGSHIFT;
+    return (page2ppn(pp) << PGSHIFT);
+}
+
+static inline u_long page2kva(struct Page *pp)
+{
+    return KADDR(page2ppn(pp) << PGSHIFT);
 }
 
 

@@ -28,8 +28,9 @@
 
 // page number field of address
 #define PPN(va)                   (((u_long)(va)) >> 12)
-#define VPN(va)                   PPN(va)
+#define VPN(va)                   (((u_long)(va) & 0xFFFFFFFFFF) >> 12)
 #define PGSHIFT                   12
+#define KADDR(pa)                 ((u_long)(pa) | 0xFFFFFF0000000000)
 
 #define VA2PFN(va)                (((u_long)(va)) & 0xFFFFFFFFF000) // va 2 PFN for EntryLo0/1
 #define PTE2PT                    512
@@ -63,17 +64,15 @@
  *                            |                            |
  *                            |            ...             |
  *                            |                            |
- *        TIMESTACKTOP -----> |----------------------------+------------0x           0135 2000
+ *        TIMESTACKTOP -----> |----------------------------+------------0x           0175 1000
  *                            |          TIMESTACK         |
- *                            |----------------------------+------------0x           0135 1000
+ *                            |----------------------------+------------0x           0175 0000
  *                            |            ENVS            |
- *                            |----------------------------+------------0x           0130 1000
+ *                            |----------------------------+------------0x           0170 0000
  *                            |            PAGES           |
- *                            |----------------------------+------------0x           0100 1000
- *                            |        Page Directory      |
- *         EL2STACKTOP -----> +----------------------------+------------0x           0100 0000
- *                            |          EL2 stack         |
- *           KSTACKTOP -----> +----------------------------+------------0x           00F0 0000
+ *                            |----------------------------+------------0x           0140 0000
+ *                            |       Kernel Page Table    |
+ *           KSTACKTOP -----> +----------------------------+------------0x           0100 0000
  *                            |         Kernel stack       |
  *                            |----------------------------|
  *                            |         Kernel Text        |
@@ -102,6 +101,7 @@
 #include "types.h"
 void bcopy(const void *, void *, size_t);
 void bzero(u_long, size_t);
+void boot_bzero(u_long, size_t);
 
 extern char bootstacktop[], bootstack[];
 

@@ -1,16 +1,28 @@
-
-MEMORY
-{
-    ram : ORIGIN = 0x80000, LENGTH = 0x1000000000
-}
-
 SECTIONS
 {
-    .text : {
-    	*(.text*)
-    } > ram
+    . = 0x80000;
+    init : {
+        boot/init.o
+        mm/mm_init.o
+    }
+    _init_end = ABSOLUTE(.);
+    
+    .text 0xFFFFFF0000000000 + _init_end : AT(_init_end) {
+        boot/main.o
+        *(.text*)
+    }
+    _text_end = .;
+    
+    .data : {
+        *(.data*)
+    }
+    _data_end = .;
+    
+    .rodata : {
+        *(.rodata*)
+    }
     
     .bss : {
-    	*(.bss*)
-    } > ram
+        *(.bss*)
+    }
 }

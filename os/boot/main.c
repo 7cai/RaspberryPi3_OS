@@ -1,20 +1,30 @@
 #include "rpsio.h"
 #include "rpslib.h"
 #include "gpio.h"
+#include "uart.h"
 #include "timer.h"
 #include "pmap.h"
 #include "env.h"
 
 extern u_long get_current_el();
-extern void el1_mmu_activate();
 
 extern u_char userA[];
+extern u_long userA_size;
 extern u_char userB[];
+extern u_long userB_size;
 
 void main(void)
 {
-    // activate el1/0 mmu
-    el1_mmu_activate();
+    uart_init();
+    _printf("\n\nInitializing...\n");
+    
+    // fill page map
+    page_init();
+    _printf("page_init success.\n");
+
+    // init env structs
+    env_init();
+    _printf("env_init success.\n");
 
     _printf("We are now at EL%lx.\n", get_current_el());
     _printf("\n");
@@ -23,8 +33,9 @@ void main(void)
     gpio_output_init(27);
 
     _printf("creating new env...\n");
-    env_create(userA, 66816);
-    env_create(userB, 66816);
+    env_create(userA, userA_size);
+    env_create(userB, userB_size);
+    
 
     _printf("activating system timer...\n");
     set_system_timer_irq(1000000);

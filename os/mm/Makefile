@@ -6,7 +6,7 @@ INCLUDES	  := -I./include/ -I../lib/include/ -I../env/include/ -I../include/
 
 .PHONY: clean
 
-all: pmap.o
+all: pmap.o mm_init.o
 
 clean:
 	rm -rf *~ *.o

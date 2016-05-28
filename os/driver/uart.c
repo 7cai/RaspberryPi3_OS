@@ -1,6 +1,6 @@
 #include "rpslib.h"
 
-#define PHYSADDR_OFFSET    0x3F200000
+#define PHYSADDR_OFFSET    0xFFFFFF0000000000uL + 0x3F200000uL
 
 #define GPFSEL1            (PHYSADDR_OFFSET + 0x00000004)
 #define GPSET0             (PHYSADDR_OFFSET + 0x0000001C)
@@ -21,8 +21,8 @@
 #define AUX_MU_STAT_REG    (PHYSADDR_OFFSET + 0x00015064)
 #define AUX_MU_BAUD_REG    (PHYSADDR_OFFSET + 0x00015068)
 
-extern void put32(unsigned int, unsigned int);
-extern unsigned int get32(unsigned int);
+extern void put32(unsigned long int, unsigned int);
+extern unsigned int get32(unsigned long int);
 
 void uart_init(void)
 {

@@ -33,7 +33,8 @@ clean:
 		done; \
 	rm -rf *.o *~ kernel8.img bootloader.elf
 
-debug:
+debug: all
 	$(OBJDUMP) -D -m aarch64 bootloader.elf > bootloader.list
+	readelf bootloader.elf -a
 
 include include.mk

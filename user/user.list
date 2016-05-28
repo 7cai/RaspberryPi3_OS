@@ -1,0 +1,75 @@
+
+user.elf:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+0000000000000000 <umain>:
+   0:	d101c3ff 	sub	sp, sp, #0x70
+   4:	a9037bfd 	stp	x29, x30, [sp,#48]
+   8:	9100c3fd 	add	x29, sp, #0x30
+   c:	a90453f3 	stp	x19, x20, [sp,#64]
+  10:	90000013 	adrp	x19, 0 <umain>
+  14:	91022273 	add	x19, x19, #0x88
+  18:	a9055bf5 	stp	x21, x22, [sp,#80]
+  1c:	f90033f7 	str	x23, [sp,#96]
+  20:	52800096 	mov	w22, #0x4                   	// #4
+  24:	52800075 	mov	w21, #0x3                   	// #3
+  28:	52800054 	mov	w20, #0x2                   	// #2
+  2c:	528000b7 	mov	w23, #0x5                   	// #5
+  30:	52800021 	mov	w1, #0x1                   	// #1
+  34:	aa1303e0 	mov	x0, x19
+  38:	2a0103e2 	mov	w2, w1
+  3c:	52800007 	mov	w7, #0x0                   	// #0
+  40:	b90003e1 	str	w1, [sp]
+  44:	528000a6 	mov	w6, #0x5                   	// #5
+  48:	52800085 	mov	w5, #0x4                   	// #4
+  4c:	52800064 	mov	w4, #0x3                   	// #3
+  50:	52800043 	mov	w3, #0x2                   	// #2
+  54:	b9000bf4 	str	w20, [sp,#8]
+  58:	b90013f5 	str	w21, [sp,#16]
+  5c:	52800001 	mov	w1, #0x0                   	// #0
+  60:	b9001bf6 	str	w22, [sp,#24]
+  64:	b90023f7 	str	w23, [sp,#32]
+  68:	94000004 	bl	78 <printf>
+  6c:	52800c80 	mov	w0, #0x64                  	// #100
+  70:	94000004 	bl	80 <sleep>
+  74:	17ffffef 	b	30 <umain+0x30>
+
+0000000000000078 <printf>:
+  78:	d4000001 	svc	#0x0
+  7c:	d65f03c0 	ret
+
+0000000000000080 <sleep>:
+  80:	d4000021 	svc	#0x1
+  84:	d65f03c0 	ret
+
+Disassembly of section .rodata:
+
+0000000000000088 <__bss_start-0x48>:
+  88:	72657375 	.word	0x72657375
+  8c:	6f727020 	.word	0x6f727020
+  90:	6d617267 	.word	0x6d617267
+  94:	72203220 	.word	0x72203220
+  98:	696e6e75 	.word	0x696e6e75
+  9c:	6e20676e 	.word	0x6e20676e
+  a0:	0a21776f 	.word	0x0a21776f
+  a4:	250a6425 	.word	0x250a6425
+  a8:	64250a64 	.word	0x64250a64
+  ac:	0a64250a 	.word	0x0a64250a
+  b0:	250a6425 	.word	0x250a6425
+  b4:	64250a64 	.word	0x64250a64
+  b8:	0a64250a 	.word	0x0a64250a
+  bc:	250a6425 	.word	0x250a6425
+  c0:	64250a64 	.word	0x64250a64
+  c4:	0a64250a 	.word	0x0a64250a
+	...
+
+Disassembly of section .comment:
+
+0000000000000000 <.comment>:
+   0:	3a434347 	ccmn	w26, w3, #0x7, mi
+   4:	4e472820 	trn1	v0.8h, v1.8h, v7.8h
+   8:	36202955 	tbz	w21, #4, 530 <__bss_start+0x460>
+   c:	302e312e 	adr	x14, 5c631 <__bss_start+0x5c561>
+	...

@@ -7,10 +7,13 @@ INCLUDES	  := -I../lib/include/ -I../driver/include/ -I../mm/include/ -I../inclu
 
 .PHONY: clean
 
-all: asm.o el2.o main.o
+all: asm.o main.o init.o
 
 asm.o :
 	$(AS) $(INCLUDES) asm.s -o asm.o
+
+init.o :
+	$(AS) $(INCLUDES) init.s -o init.o
 
 clean:
 	rm -rf *~ *.o

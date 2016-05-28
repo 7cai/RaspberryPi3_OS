@@ -4,14 +4,14 @@
 #define MIN_GPIO        2
 #define MAX_GPIO        27
 
-#define PHYSADDR_OFFSET 0x3F200000
+#define PHYSADDR_OFFSET 0xFFFFFF0000000000uL + 0x3F200000
 
 #define GPFSEL0         (PHYSADDR_OFFSET + 0x00000000)
 #define GPSET0          (PHYSADDR_OFFSET + 0x0000001C)
 #define GPCLR0          (PHYSADDR_OFFSET + 0x00000028)
 
-extern unsigned int get32(unsigned int);
-extern void put32(unsigned int, unsigned int);
+extern unsigned int get32(unsigned long int);
+extern void put32(unsigned long int, unsigned int);
 
 static int check_if_gpio_legal(int n)
 {

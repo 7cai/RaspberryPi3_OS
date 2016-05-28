@@ -1,0 +1,19 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	0	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+curenv	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^struct Env *curenv;                   \/\/ the current env$/;"	variable	line:10	typeref:struct:Env
+env_free_list	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^static struct Env_list env_free_list; \/\/ Free list$/;"	variable	line:12	typeref:struct:Env_list	file:
+mkenvid	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^u_int mkenvid(struct Env *e)$/;"	function	line:28	signature:(struct Env *e)
+envid2env	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^int envid2env(u_int envid, struct Env **penv, int checkperm)$/;"	function	line:51	signature:(u_int envid, struct Env **penv, int checkperm)
+env_init	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^void env_init(void)$/;"	function	line:95	signature:(void)
+env_setup_vm	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^static int env_setup_vm(struct Env *e)$/;"	function	line:126	file:	signature:(struct Env *e)
+env_alloc	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^int env_alloc(struct Env **new, u_int parent_id)$/;"	function	line:166	signature:(struct Env **new, u_int parent_id)
+load_icode_mapper	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^static int load_icode_mapper(u_long va, u_int32_t sgsize,$/;"	function	line:218	file:	signature:(u_long va, u_int32_t sgsize, u_char *bin, u_int32_t bin_size, void *user_data)
+load_icode	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^static void load_icode(struct Env *e, u_char *binary, u_int size)$/;"	function	line:297	file:	signature:(struct Env *e, u_char *binary, u_int size)
+env_create	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^void env_create(u_char *binary, int size)$/;"	function	line:337	signature:(u_char *binary, int size)
+env_free	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^void env_free(struct Env *e)$/;"	function	line:351	signature:(struct Env *e)
+env_destroy	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^void env_destroy(struct Env *e)$/;"	function	line:419	signature:(struct Env *e)
+env_run	Z:\RaspberryPi3_OS_new\os\lib\env.c	/^void env_run(struct Env *e)$/;"	function	line:447	signature:(struct Env *e)
