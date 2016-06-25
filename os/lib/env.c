@@ -1,10 +1,11 @@
-#include <rpsio.h>
-#include <mmu.h>
-#include <pmap.h>
-#include <error.h>
-#include <env.h>
-#include <kerelf.h>
-#include <sched.h>
+#include "rpsio.h"
+#include "mmu.h"
+#include "pmap.h"
+#include "error.h"
+#include "trap.h"
+#include "env.h"
+#include "kerelf.h"
+#include "sched.h"
 
 extern struct Env *envs;              // All environments
 struct Env *curenv;                   // the current env
@@ -13,7 +14,13 @@ static struct Env_list env_free_list; // Free list
 
 extern int load_elf(u_char *, int, u_long *, void *, int (*map)(u_long, u_int32_t, u_char *, u_int32_t, void *));
 
-extern char *syscall_vector;
+void sys_return(int ret)
+{
+    struct Trapframe *old;
+    old = (struct Trapframe *)(TIMESTACKTOP - sizeof(struct Trapframe));
+    old->regs[0] = ret;
+}
+
 
 /* Overview:
  *  This function is for making an unique ID for every env.
@@ -27,12 +34,19 @@ extern char *syscall_vector;
 u_int mkenvid(struct Env *e)
 {
     static u_long next_env_id = 0;
-
+    
     /*Hint: lower bits of envid hold e's position in the envs array. */
     u_int idx = e - envs;
-
+    
     /*Hint:  high bits of envid hold an increasing number. */
     return (++next_env_id << (1 + LOG2NENV)) | idx;
+}
+
+
+// return the current environment id
+void _getenvid(void)
+{
+    sys_return(curenv->env_id);
 }
 
 
@@ -50,7 +64,7 @@ u_int mkenvid(struct Env *e)
 int envid2env(u_int envid, struct Env **penv, int checkperm)
 {
     struct Env *e;
-
+    
     /* Hint:
      *  If envid is zero, return the current environment.*/
     if (envid == 0)
@@ -58,15 +72,15 @@ int envid2env(u_int envid, struct Env **penv, int checkperm)
         *penv = curenv;
         return 0;
     }
-
+    
     e = &envs[ENVX(envid)];
-
+    
     if ((e->env_status == ENV_FREE) || (e->env_id != envid))
     {
         *penv = 0;
         return -E_BAD_ENV;
     }
-
+    
     /* Hint:
      *  Check that the calling environment has legitimate permissions
      *  to manipulate the specified environment.
@@ -94,11 +108,11 @@ int envid2env(u_int envid, struct Env **penv, int checkperm)
 void env_init(void)
 {
     curenv = NULL;
-
+    
     int i;
     /*Step 1: Initial env_free_list. */
     LIST_INIT(&env_free_list);
-
+    
     /*Step 2: Travel the elements in 'envs', init every element(mainly initial its status, mark it as free)
      * and inserts them into the env_free_list as reverse order. */
     for (i = NENV - 1; i >= 0; i--)
@@ -106,13 +120,6 @@ void env_init(void)
         envs[i].env_status = ENV_FREE;
         LIST_INSERT_HEAD(&env_free_list, &envs[i], env_link);
     }
-
-    struct Page *p;
-    if (page_alloc(&p) < 0)
-    {
-        panic("env_setup_vm - page_alloc error\n");
-    }
-    p->pp_ref++;
 }
 
 
@@ -127,7 +134,7 @@ static int env_setup_vm(struct Env *e)
     int r;
     struct Page *p = NULL;
     Pte *pgdir;
-
+    
     /*Step 1: Allocate a page for the page directory and add its reference.
      * pgdir is the page directory of Env e. */
     if ((r = page_alloc(&p)) < 0)
@@ -137,7 +144,7 @@ static int env_setup_vm(struct Env *e)
     }
     p->pp_ref++;
     pgdir = (Pte *)page2pa(p);
-
+    
     e->env_ttbr0 = pgdir;
     return 0;
 }
@@ -166,34 +173,35 @@ int env_alloc(struct Env **new, u_int parent_id)
 {
     int r;
     struct Env *e;
-
+    
     /*Step 1: Get a new Env from env_free_list*/
     e = LIST_FIRST(&env_free_list);
     if (e == NULL)
     {
         return -E_NO_FREE_ENV;
     }
-
+    
     /*Step 2: Call certain function(has been implemented) to init kernel memory layout for this new Env.
      * The function mainly maps the kernel address to this new Env address. */
     if ((r = env_setup_vm(e)) < 0)
     {
         return r;
     }
-
+    
     /*Step 3: Initialize every field of new Env with appropriate values*/
     e->env_id = mkenvid(e);
     e->env_parent_id = parent_id;
     e->env_status = ENV_RUNNABLE;
-
+    e->env_ipc_recving = 0;
+    
     /*Step 4: focus on initializing env_tf structure, located at this new Env.
      * especially the sp register(no way!), CPU status. */
     e->env_tf.spsr = 0;
     e->env_tf.sp = USTACKTOP;
-
+    
     /*Step 5: Remove the new Env from Env free list*/
     LIST_REMOVE(e, env_link);
-
+    
     *new = e;
     return 0;
 }
@@ -222,7 +230,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
     u_long i;
     int r;
     u_long offset = va - ROUNDDOWN(va, BY2PG);
-
+    
     /*Step 1: load all content of bin into memory. */
     if (offset)
     {
@@ -231,15 +239,14 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
         {
             return r;
         }
-        p->pp_ref++;
-
+        
         char *src = (char *)((u_long)bin);
         char *dest = (char *)(page2kva(p) + offset);
         bcopy(src, dest, BY2PG - offset);
         char *temp_va = (char *)(va - offset);
         page_insert(env->env_ttbr0, p, (u_long)temp_va, ATTRIB_AP_RW_ALL);
     }
-
+    
     for (i = offset; i < bin_size; i += BY2PG)
     {
         /* Hint: You should alloc a page and increase the reference count of it. */
@@ -247,7 +254,6 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
         {
             return r;
         }
-        p->pp_ref++;
         if (bin_size - i >= BY2PG)
         {
             bcopy(bin + i, (void *)page2kva(p), BY2PG);
@@ -256,10 +262,10 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
         {
             bcopy(bin + i, (void *)page2kva(p), bin_size - i);
         }
-
+        
         page_insert(env->env_ttbr0, p, va + i, ATTRIB_AP_RW_ALL);
     }
-
+    
     /*Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
      * i has the value of `bin_size` now. */
     while (i < sgsize)
@@ -268,13 +274,12 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
         {
             return r;
         }
-        p->pp_ref++;
-
+        
         page_insert(env->env_ttbr0, p, va + i, ATTRIB_AP_RW_ALL);
-
+        
         i += BY2PG;
     }
-
+    
     return 0;
 }
 
@@ -302,21 +307,20 @@ static void load_icode(struct Env *e, u_char *binary, u_int size)
     struct Page *p = NULL;
     u_long entry_point;
     u_long r;
-
+    
     /*Step 1: alloc a page. */
     if ((r = page_alloc(&p)) < 0)
     {
         panic("page alloc error: %d", r);
     }
-    p->pp_ref++;
-
+    
     /*Step 2: Use appropriate perm to set initial stack for new Env. */
     /*Hint: The user-stack should be writable? */
     page_insert(e->env_ttbr0, p, USTACKTOP - BY2PG, ATTRIB_AP_RW_ALL);
-
+    
     /*Step 3:load the binary by using elf loader. */
     load_elf(binary, size, &entry_point, e, load_icode_mapper);
-
+    
     /***Your Question Here***/
     /*Step 4:Set CPU's PC register as appropriate value. */
     e->env_tf.elr = entry_point;
@@ -336,7 +340,7 @@ void env_create(u_char *binary, int size)
     struct Env *e;
     /*Step 1: Use env_alloc to alloc a new env. */
     env_alloc(&e, 0);
-
+    
     /*Step 2: Use load_icode() to load the named elf binary. */
     load_icode(e, binary, size);
 }
@@ -347,61 +351,61 @@ void env_create(u_char *binary, int size)
  */
 void env_free(struct Env *e)
 {
-    u_int Pteno0, Pteno1, Pteno2, Pteno3;
-    Pte *Pte1, *Pte2, *Pte3;
-
+    u_int pten0, pten1, pten2, pten3;
+    Pte *pte1, *pte2, *pte3;
+    
     /* Hint: Note the environment's demise.*/
     _printf("[%08x] free env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
-
+    
     /* Hint: Flush all mapped pages in the user portion of the address space */
-    for (Pteno0 = 0; Pteno0 < PTE2PT; Pteno0++)
+    for (pten0 = 0; pten0 < PTE2PT; pten0++)
     {
         /* Hint: only look at mapped page tables. */
-        if (!(e->env_ttbr0[Pteno0] & PTE_V))
+        if (!(*((Pte *)KADDR(PTE_ADDR(curenv->env_ttbr0)) + pten0) & PTE_V))
         {
             continue;
         }
-        Pte1 = (Pte *)e->env_ttbr0[Pteno0];
+        pte1 = (Pte *) * ((Pte *)KADDR(PTE_ADDR(curenv->env_ttbr0)) + pten0);
         /* Hint: Unmap all PTEs in this page table. */
-        for (Pteno1 = 0; Pteno1 <= PTE2PT; Pteno1++)
+        for (pten1 = 0; pten1 < PTE2PT; pten1++)
         {
-            if (!(Pte1[Pteno1] & PTE_V))
+            if (!(*((Pte *)KADDR(PTE_ADDR(pte1)) + pten1) & PTE_V))
             {
                 continue;
             }
-            Pte2 = (Pte *)Pte1[Pteno1];
-
-            for (Pteno2 = 0; Pteno2 <= PTE2PT; Pteno2++)
+            pte2 = (Pte *) * ((Pte *)KADDR(PTE_ADDR(pte1)) + pten1);
+            
+            for (pten2 = 0; pten2 < PTE2PT; pten2++)
             {
-                if (!(Pte2[Pteno2] & PTE_V))
+                if (!(*((Pte *)KADDR(PTE_ADDR(pte2)) + pten2) & PTE_V))
                 {
                     continue;
                 }
-                Pte3 = (Pte *)Pte2[Pteno2];
-
-                for (Pteno3 = 0; Pteno3 <= PTE2PT; Pteno3++)
+                pte3 = (Pte *) * ((Pte *)KADDR(PTE_ADDR(pte2)) + pten2);
+                
+                for (pten3 = 0; pten3 < PTE2PT; pten3++)
                 {
-                    if (!(Pte3[Pteno3] & PTE_V))
+                    if (!(*((Pte *)KADDR(PTE_ADDR(pte3)) + pten3) & PTE_V))
                     {
                         continue;
                     }
-
-                    page_remove(e->env_ttbr0, PTE_ADDR(Pte3[Pteno3]));
+                    
+                    page_remove(e->env_ttbr0, pten2va(pten0, pten1, pten2, pten3));
                 }
-
-                Pte2[Pteno2] = 0;
-                page_decref(pa2page((u_long)Pte3));
+                
+                *((Pte *)KADDR(PTE_ADDR(pte2)) + pten2) = 0;
+                page_decref(pa2page((u_long)PTE_ADDR(pte3)));
             }
-
-            Pte1[Pteno1] = 0;
-            page_decref(pa2page((u_long)Pte2));
+            
+            *((Pte *)KADDR(PTE_ADDR(pte1)) + pten1) = 0;
+            page_decref(pa2page((u_long)PTE_ADDR(pte2)));
         }
         /* Hint: free the page table itself. */
-        e->env_ttbr0[Pteno0] = 0;
-        page_decref(pa2page((u_long)Pte1));
+        *((Pte *)KADDR(PTE_ADDR(curenv->env_ttbr0)) + pten0) = 0;
+        page_decref(pa2page((u_long)PTE_ADDR(pte1)));
     }
+    
     /* Hint: free the page directory. */
-    e->env_ttbr0 = 0;
     page_decref(pa2page((u_long)e->env_ttbr0));
     /* Hint: return the environment to the free list. */
     e->env_status = ENV_FREE;
@@ -413,17 +417,25 @@ void env_free(struct Env *e)
  *  Frees env e, and schedules to run a new env
  *  if e is the current env.
  */
-void env_destroy(struct Env *e)
+void _env_destroy(u_int envid)
 {
+    struct Env *e;
+    
+    if ((envid2env(envid, &e, 1)) < 0)
+    {
+        return;
+    }
+    
     /* Hint: free e. */
+    _printf("[%08x] destroying %08x\n", curenv->env_id, e->env_id);
     env_free(e);
-
+    
     /* Hint: schedule to run a new environment. */
     if (curenv == e)
     {
         curenv = NULL;
         _printf("i am killed ... \n");
-        sched_yield();
+        _sched_yield();
     }
 }
 
@@ -444,23 +456,186 @@ extern void load_ttbr0_context(u_long ttbr0);
 void env_run(struct Env *e)
 {
     /*Step 1: save register state of curenv. */
-
+    
     /* Hint: if there is a environment running,you should do
      *  context switch.You can imitate env_destroy() 's behaviors.*/
     struct Trapframe *old;
     old = (struct Trapframe *)(TIMESTACKTOP - sizeof(struct Trapframe));
-
     if (curenv)
     {
         bcopy(old, &curenv->env_tf, sizeof(struct Trapframe));
         curenv->env_tf.elr = old->elr;
     }
-
+    
     /*Step 2: Set 'curenv' to the new environment. */
     curenv = e;
     bcopy(&curenv->env_tf, old, sizeof(struct Trapframe));
-
+    
     /*Step 3: Use lcontext() to switch to its address space. */
     load_ttbr0_context((u_long)curenv->env_ttbr0);
     tlb_invalidate();
+    
+    if (curenv->env_ipc_recving == 2)
+    {
+        curenv->env_ipc_recving = 0;
+        *(curenv->env_ipc_from_adr) = curenv->env_ipc_from;
+        *(curenv->env_ipc_value_adr) = curenv->env_ipc_value;
+        *(curenv->env_ipc_perm_adr) = curenv->env_ipc_perm;
+    }
+}
+
+
+void _fork(void)
+{
+    u_int newenvid;
+    struct Env *new_env;
+    
+    if ((env_alloc(&new_env, curenv->env_id)) < 0)
+    {
+        panic("fork: no env can be alloced\n");
+    }
+    newenvid = new_env->env_id;
+    
+    u_int pten0, pten1, pten2, pten3;
+    Pte *pte1, *pte2, *pte3;
+    for (pten0 = 0; pten0 < PTE2PT; pten0++)
+    {
+        /* Hint: only look at mapped page tables. */
+        if (!(*((Pte *)KADDR(PTE_ADDR(curenv->env_ttbr0)) + pten0) & PTE_V))
+        {
+            continue;
+        }
+        pte1 = (Pte *) * ((Pte *)KADDR(PTE_ADDR(curenv->env_ttbr0)) + pten0);
+        for (pten1 = 0; pten1 < PTE2PT; pten1++)
+        {
+            if (!(*((Pte *)KADDR(PTE_ADDR(pte1)) + pten1) & PTE_V))
+            {
+                continue;
+            }
+            pte2 = (Pte *) * ((Pte *)KADDR(PTE_ADDR(pte1)) + pten1);
+            
+            for (pten2 = 0; pten2 < PTE2PT; pten2++)
+            {
+                if (!(*((Pte *)KADDR(PTE_ADDR(pte2)) + pten2) & PTE_V))
+                {
+                    continue;
+                }
+                pte3 = (Pte *) * ((Pte *)KADDR(PTE_ADDR(pte2)) + pten2);
+                
+                for (pten3 = 0; pten3 < PTE2PT; pten3++)
+                {
+                    if (!(*((Pte *)KADDR(PTE_ADDR(pte3)) + pten3) & PTE_V))
+                    {
+                        continue;
+                    }
+                    
+                    if (pten2va(pten0, pten1, pten2, pten3) != USTACKTOP - BY2PG)
+                    {
+                        page_insert(curenv->env_ttbr0, pa2page(PTE_ADDR(*((Pte *)KADDR(PTE_ADDR(pte3)) + pten3))), pten2va(pten0, pten1, pten2, pten3), ATTRIB_AP_RO_ALL);
+                        page_insert(new_env->env_ttbr0, pa2page(PTE_ADDR(*((Pte *)KADDR(PTE_ADDR(pte3)) + pten3))), pten2va(pten0, pten1, pten2, pten3), ATTRIB_AP_RO_ALL);
+                    }
+                    else
+                    {
+                        struct Page *p;
+                        page_alloc(&p);
+                        bcopy((void *)USTACKTOP - BY2PG, (void *)page2kva(p), BY2PG);
+                        page_insert(new_env->env_ttbr0, p, pten2va(pten0, pten1, pten2, pten3), ATTRIB_AP_RW_ALL);
+                    }
+                }
+            }
+        }
+    }
+    
+    tlb_invalidate();
+    
+    struct Trapframe *old;
+    old = (struct Trapframe *)(TIMESTACKTOP - sizeof(struct Trapframe));
+    bcopy((void *)old, (void *)&new_env->env_tf, sizeof(struct Trapframe));
+    
+    new_env->env_tf.regs[0] = 0;
+    old->regs[0] = newenvid;
+}
+
+
+void _ipc_can_recv(u_long *whom, u_long dstva, int *perm, int *value)
+{
+    if (curenv->env_ipc_recving)
+    {
+        panic("already recving!");
+    }
+    
+    curenv->env_ipc_from_adr = whom;
+    curenv->env_ipc_perm_adr = (unsigned int *)perm;
+    curenv->env_ipc_value_adr = (unsigned int *)value;
+    curenv->env_ipc_recving = 1;
+    curenv->env_ipc_dstva = dstva;
+    curenv->env_status = ENV_NOT_RUNNABLE;
+}
+
+
+// Try to send 'value' to the target env 'envid'.
+//
+// The send fails with a return value of -E_IPC_NOT_RECV if the
+// target has not requested IPC with sys_ipc_recv.
+//
+// Otherwise, the send succeeds, and the target's ipc fields are
+// updated as follows:
+//    env_ipc_recving is set to 0 to block future sends
+//    env_ipc_from is set to the sending envid
+//    env_ipc_value is set to the 'value' parameter
+// The target environment is marked runnable again.
+//
+// Return 0 on success, < 0 on error.
+//
+// Hint: the only function you need to call is envid2env.
+void _ipc_can_send(u_long envid, int value, u_long srcva, int perm)
+{
+    int r;
+    struct Env *e;
+    struct Page *p;
+    
+    if ((r = envid2env(envid, &e, 0)) < 0)
+    {
+        sys_return(r);
+        return;
+    }
+    
+    if ((e)->env_ipc_recving != 1)
+    {
+        sys_return(-E_IPC_NOT_RECV);
+        return;
+    }
+    
+    if ((srcva != 0) && (e->env_ipc_dstva != 0))
+    {
+        p = page_lookup(curenv->env_ttbr0, srcva, 0);
+        
+        if (p == 0)
+        {
+            _printf("[%08x] page_lookup %08x failed in sys_ipc_can_send\n", curenv->env_id, srcva);
+            sys_return(-E_INVAL);
+            return;
+        }
+        
+        r = page_insert(e->env_ttbr0, p, e->env_ipc_dstva, perm);
+        
+        if (r < 0)
+        {
+            sys_return(r);
+            return;
+        }
+        
+        e->env_ipc_perm = perm;
+    }
+    else
+    {
+        e->env_ipc_perm = 0;
+    }
+    
+    e->env_ipc_recving = 2;
+    e->env_ipc_from = curenv->env_id;
+    e->env_ipc_value = value;
+    e->env_status = ENV_RUNNABLE;
+    sys_return(0);
+    return;
 }

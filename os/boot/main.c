@@ -8,10 +8,12 @@
 
 extern u_long get_current_el();
 
-extern u_char userA[];
-extern u_long userA_size;
-extern u_char userB[];
-extern u_long userB_size;
+// extern u_char userA[];
+// extern u_long userA_size;
+// extern u_char userB[];
+// extern u_long userB_size;
+extern u_char user[];
+extern u_long user_size;
 
 void main(void)
 {
@@ -33,9 +35,9 @@ void main(void)
     gpio_output_init(27);
 
     _printf("creating new env...\n");
-    env_create(userA, userA_size);
-    env_create(userB, userB_size);
-    
+    //env_create(userA, userA_size);
+    //env_create(userB, userB_size);
+    env_create(user, user_size);
 
     _printf("activating system timer...\n");
     set_system_timer_irq(1000000);

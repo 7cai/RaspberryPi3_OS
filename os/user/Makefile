@@ -1,14 +1,14 @@
 INCLUDES	  := -I../include/ -I include/
 
-%.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c $<
+user_dir      := ../../user
+
+user.o:
+	$(MAKE) --directory=$(user_dir)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $(user_dir)/user.c
 
 .PHONY: clean
 
-all: elf.o syscall.o
-
-syscall.o :
-	$(AS) $(INCLUDES) syscall.s -o syscall.o
+all: user.o
 
 clean:
 	rm -rf *~ *.o

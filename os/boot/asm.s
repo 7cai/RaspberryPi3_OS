@@ -14,8 +14,8 @@ jump_to_el0:
     cmp x0, #8
     beq 2f
 
-    ldr x0, =0xe00000
-    msr sp_el0, x0          // init the stack of el0
+    // ldr x0, =0xe00000
+    // msr sp_el0, x0          // init the stack of el0
 
     // return to el0 from el1
     mov x0, #0x0
@@ -66,4 +66,19 @@ get_sctlr_el1:
 .globl get_esr
 get_esr:
     mrs x0, esr_el1
+    ret
+
+.globl get_spsr
+get_spsr:
+    mrs x0, spsr_el1
+    ret
+
+.globl get_elr
+get_elr:
+    mrs x0, elr_el1
+    ret
+
+.globl get_far
+get_far:
+    mrs x0, far_el1
     ret

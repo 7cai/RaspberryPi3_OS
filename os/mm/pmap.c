@@ -74,6 +74,7 @@ int page_alloc(struct Page **pp)
      * Hint: use `bzero`. */
     bzero(page2kva(ppage_temp), BY2PG);
 
+    ppage_temp->pp_ref = 0;
     *pp = ppage_temp;
 
     return 0;
@@ -234,6 +235,7 @@ int page_insert(Pte *pgdir, struct Page *pp, u_long va, u_int perm)
     {
         return -E_NO_MEM;    // panic ("page insert failed .\n");
     }
+
     *pgtable_entry = (PTE_ADDR(page2pa(pp)) | PERM);
     pp->pp_ref++;
     return 0;

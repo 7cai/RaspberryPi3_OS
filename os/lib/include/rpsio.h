@@ -3,6 +3,6 @@
 
 void _printf(const char *fmt, ...);
 
-void putchar(unsigned int c);
+void _putchar(unsigned int c);
 
 #endif /* _rpsio_h_ */

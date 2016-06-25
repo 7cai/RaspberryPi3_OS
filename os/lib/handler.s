@@ -7,25 +7,25 @@
 .align 11
 .globl vectors
 vectors:
-    vector SVCStub
+    vector SYNStub
     vector IRQStub
-    vector SVCStub
-    vector SVCStub
+    vector SYNStub
+    vector SYNStub
 
-    vector SVCStub
+    vector SYNStub
     vector IRQStub
-    vector SVCStub
-    vector SVCStub
+    vector SYNStub
+    vector SYNStub
 
-    vector SVCStub
+    vector SYNStub
     vector IRQStub
-    vector SVCStub
-    vector SVCStub
+    vector SYNStub
+    vector SYNStub
 
-    vector SVCStub
+    vector SYNStub
     vector IRQStub
-    vector SVCStub
-    vector SVCStub
+    vector SYNStub
+    vector SYNStub
 
 .macro push_time_stack
     str x0, [sp, #-16]!
@@ -92,43 +92,58 @@ vectors:
 .globl IRQStub
 IRQStub:
     push_time_stack
-
+    ldr x19, =0xFFFFFF0001000000// kernel stack
+    mov sp, x19
     bl irq_handler
 
     pop_time_stack
 
     eret
 
-.globl SVCStub
-SVCStub:
-    push_time_stack
-
-    bl svc_handler
-
-    pop_time_stack
-
-    eret
 
 .macro function_entry name id iss retaddr
     cmp \iss, \id
     b.ne 1f
     bl \name
-    b \retaddr
+    bl \retaddr
 1:
 .endm
 
+.globl SYNStub
+SYNStub:
+    push_time_stack
+
+    b synchronous_handler
+
+stub_end:
+    pop_time_stack
+
+    eret
+
+.globl synchronous_handler
+synchronous_handler:
+    mrs x19, esr_el1
+    lsr x19, x19, #26
+    
+    cmp x19, #0x24
+    b.eq data_abort_handler
+    cmp x19, #0x15
+    b.eq svc_handler
+    b generic_handler
+
+.globl data_abort_handler
+data_abort_handler:
+    ldr x19, =0xFFFFFF0001000000// kernel stack
+    mov sp, x19
+    str x30, [sp, #-8]!         // save x30 at first
+    
+    bl mmu_fault_handler
+    
+    ldr x30, [sp], #8
+    b stub_end
 
 .globl svc_handler
 svc_handler:
-    mrs x19, esr_el1
-    lsr x19, x19, #26
-    cmp x19, #0x15
-    b.ne return                 // if isn't svc from AArch64, returns
-
-    str x30, [sp, #-8]!         // save x30 at first
-
-    mov x19, sp                 // save sp
-
     mrs x20, sp_el0
     mov sp, x20                 // change stack
 
@@ -136,13 +151,15 @@ svc_handler:
     bic x20, x20, #0xFE000000   // set iss
 
 function_entrys:
-    function_entry _printf, #0, x20, function_entry_end
-    function_entry _sleep, #1, x20, function_entry_end
+    function_entry _putchar, #0, x20, stub_end
+    function_entry _printf, #1, x20, stub_end
+    function_entry _sleep, #2, x20, stub_end
+    function_entry _getenvid, #3, x20, stub_end
+    function_entry _ipc_can_recv, #4, x20, stub_end
+    function_entry _ipc_can_send, #5, x20, stub_end
+    ldr x19, =0xFFFFFF0001000000// kernel stack
+    mov sp, x19
+    function_entry _env_destroy, #6, x20, stub_end
+    function_entry _fork, #7, x20, stub_end
+    function_entry _sched_yield, #8, x20, stub_end
     bl generic_handler
-
-function_entry_end:
-    mov sp, x19                 // recover sp
-    ldr x30, [sp], #8           // get x30
-
-return:
-    ret

@@ -10,7 +10,7 @@
  * Hints:
  *  The variable which is for counting should be defined as 'static'.
  */
-void sched_yield(void)
+void _sched_yield(void)
 {
     static int index = 0;
     extern struct Env *envs;
@@ -31,6 +31,7 @@ void sched_yield(void)
                     gpio_set(17);
                     gpio_clr(27);
                 }
+
                 env_run(thisEnv);
                 return;
             }

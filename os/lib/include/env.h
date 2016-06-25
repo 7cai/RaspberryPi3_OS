@@ -23,6 +23,15 @@ struct Env
     u_int            env_parent_id; // env_id of this env's parent
     u_int            env_status;    // Status of the environment
     Pte              *env_ttbr0;    // Address of page dir
+
+	u_int            env_ipc_value;   // data value sent to us
+    u_int *          env_ipc_value_adr;//
+	u_int            env_ipc_from;    // envid of the sender
+    u_long *         env_ipc_from_adr;// 
+	u_int            env_ipc_recving; // env is blocked receiving
+	u_long           env_ipc_dstva;	  // va at which to map received page
+	u_int            env_ipc_perm;	  // perm of page mapping received
+    u_int *          env_ipc_perm_adr;//
 };
 
 LIST_HEAD(Env_list, Env);
@@ -33,9 +42,11 @@ void env_init(void);
 int env_alloc(struct Env **e, u_int parent_id);
 void env_free(struct Env *);
 void env_create(u_char *binary, int size);
-void env_destroy(struct Env *e);
 
-int envid2env(u_int envid, struct Env **penv, int checkperm);
 void env_run(struct Env *e);
+
+
+// void _ipc_recv(u_long *, u_long,);
+// int _ipc_can_send(u_long, u_int, u_long, u_int);
 
 #endif // !_ENV_H_

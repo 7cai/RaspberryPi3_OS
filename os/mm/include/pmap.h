@@ -47,6 +47,10 @@ static inline u_long page2ppn(struct Page *pp)
     return pp - pages;
 }
 
+static inline u_long pten2va(u_int pten0, u_int pten1, u_int pten2, u_int pten3)
+{
+    return (((u_long)pten0 << 39) | ((u_long)pten1 << 30) | ((u_long)pten2 << 21) | ((u_long)pten3 << 12));
+}
 
 /* Get the physical address of Page 'pp'. */
 static inline u_long page2pa(struct Page *pp)

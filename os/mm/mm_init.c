@@ -129,13 +129,7 @@ void boot_map_segment(Pte *pgdir, u_long va, u_long size, u_long pa, int perm)
 {
     Pte *pgtable_entry;
 
-    /* Step 1: Check if `size` is a multiple of BY2PG. */
-    if (size % BY2PG != 0)
-    {
-        //panic("size %ld is unaligned!", size);
-    }
-
-    /* Step 2: Map virtual address space to physical address. */
+    /* Step 1: Map virtual address space to physical address. */
     /* Hint: Use `boot_pgdir_walk` to get the page table entry of virtual address `va`. */
     do
     {

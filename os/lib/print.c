@@ -19,7 +19,7 @@ static void lp_print(void (*output)(const char *, int),
 /* private variable */
 static const char theFatalMsg[] = "fatal error in lp_print!";
 
-void putchar(unsigned int c)
+void _putchar(unsigned int c)
 {
     switch (c)
     {
@@ -73,7 +73,7 @@ static void print_str(const char *s, int l)
     int i;
     for (i = 0; i < l; i++)
     {
-        putchar(s[i]);
+        _putchar(s[i]);
     }
 }
 

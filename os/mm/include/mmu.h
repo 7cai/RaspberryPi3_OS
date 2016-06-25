@@ -24,7 +24,7 @@
 #define PT3X(va)                  ((((u_long)(va)) >> 12) & 0x01FF)
 
 // gets addr of pte from pte with modifier
-#define PTE_ADDR(pte)             ((u_long)(pte) & 0xFFFFFFFFF000)
+#define PTE_ADDR(pte)             ((u_long)(pte) & 0xFFFFFFF000)
 
 // page number field of address
 #define PPN(va)                   (((u_long)(va)) >> 12)
