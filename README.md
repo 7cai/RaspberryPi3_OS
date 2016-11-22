@@ -1,7 +1,5 @@
 # RaspberryPi3_OS
-A simple Linux kernel for Raspberry Pi 3.
-
-Porting MIPS operating system kernel to Raspberry Pi 3 on AArch64.
+Porting simplified JOS, a simple MIPS operating system kernel, to Raspberry Pi 3 on AArch64.
 
 ## TODO
 - [X] Boot
@@ -10,6 +8,8 @@ Porting MIPS operating system kernel to Raspberry Pi 3 on AArch64.
 - [X] System call
 - [ ] File system
 - [ ] Shell
+
+Currently not updating because of the end of the course.
 
 ## License
 
